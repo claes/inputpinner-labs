@@ -491,6 +491,18 @@ its initialization seed unchanged, checking update propagation.
 The verifier targets `x86_64-linux`, needs Nix, jq and GNU utilities, and requires
 no pinner CLIs.
 
+Validated on `x86_64-linux` with Nix 2.34.8. All eight fresh copies resolved
+the parent revision and source hash at all four inspected input paths and
+produced matching package and wrapper derivations. Every wrapper reported
+`patchelf 0.19.2` and used a package built with the parent standard environment
+and dynamic linker. Original source trees and project files stayed unchanged;
+adapted copies differed only in the replacement lock node. Changing the manual
+parent pin in a disposable copy propagated to upstream’s package while leaving
+the initialization seed unchanged. Tests used paths containing spaces and
+required no pinner CLIs or initialization. ShellCheck and Nix/Bash syntax checks
+passed. Examples 01–07 are unchanged; no build artifacts remain in the new
+project directories.
+
 ## Further examples
 
 Examples 01–08 are implemented. The remaining numbers reserve the
