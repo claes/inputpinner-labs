@@ -350,9 +350,9 @@ upstream flake: source pins and hashes, unchanged upstream locks, package and
 wrapper derivations, executable dependencies, argument forwarding and unchanged
 project files during builds. `--syntax-only` checks Nix and Bash syntax.
 
-Validated on `x86_64-linux` with Nix 2.34.8: all 14 implementations produced
-the same wrapper and referenced the original upstream package. Both libraries
-retained upstream’s independent nixpkgs, and IFD was disabled throughout.
+Validated on `x86_64-linux` with Nix 2.34.8: all 20 implementations produced
+the same wrapper and referenced the original upstream package. All variants
+retained upstream’s independent nixpkgs revision, and IFD was disabled throughout.
 The flake-inputs initializers regenerated matching pins and built successfully
 for all six source-only pinners in disposable copies.
 
@@ -372,6 +372,11 @@ need neither npins nor unflake installed. The bridge is maintained by this lab;
 it is not an upstream-supported backend. No extra runtime library or IFD is
 needed. Each example includes its generated evaluator and native locks.
 
+Calling unflake’s internal Python generator directly is another possible
+integration, avoiding the temporary npins stage. It would require maintaining
+a custom backend against an internal API; this lab retains the CLI-based route.
+Unflake does not expose a standalone Nix importer like flake-inputs.
+
 The pinned unflake version ignores nested overrides. Its generated graph
 therefore includes git-hooks’ gitignore and flake-compat sources, which the
 native reference avoids through empty follows. Explicit rules unify the
@@ -386,6 +391,13 @@ gitignore, and its update check requires the generated evaluator to stay
 unchanged while only the native parent pin changes. Initialization requires
 npins for generation plus the chosen pinner (and Nix/jq); per-example READMEs
 provide commands and discuss the alternatives.
+
+All 18 unflake variants were initialized with the pinned tools and passed their
+build checks. The source mapping covers every dependency exactly once; npins’
+`__functor` helper is metadata rather than a dependency. In 08 all six parent-only
+updates changed both package derivations while leaving the evaluator unchanged.
+Consumption also passed from fresh copies in paths containing spaces, without
+initialization or unflake installed, and with IFD disabled.
 
 ## Example 07: Apply an upstream flake overlay with flake libraries and unflake
 
@@ -421,10 +433,10 @@ locks, the added attribute, preservation of the original package and unchanged
 files during builds. It distinguishes the result from 06’s upstream package.
 `--syntax-only` checks Nix and Bash syntax.
 
-Validated on `x86_64-linux` with Nix 2.34.8: all 14 implementations produced
+Validated on `x86_64-linux` with Nix 2.34.8: all 20 implementations produced
 the same overlay package with the parent standard environment and dynamic linker.
-The original parent package and upstream locks stayed unchanged. Both library
-variants worked with IFD disabled.
+The original parent package and upstream source trees stayed unchanged. All
+variants worked with IFD disabled, including the generated unflake evaluators.
 
 ## Example 08: Hello and upstream patchelf share nixpkgs
 
@@ -513,15 +525,16 @@ nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/2efa67fd26b6df417c
   -p niv npins lon nixtamal.bin tack --run './verify-08.sh --updates'
 ```
 
-Validated on `x86_64-linux` with Nix 2.34.8: all 14 sharing implementations
+Validated on `x86_64-linux` with Nix 2.34.8: all 20 sharing implementations
 passed with both parent pins, producing matching Hello and patchelf derivations
 at each pin. Only the parent pin changed; upstream and adapter records stayed
-fixed. All four effective input edges matched the parent source contents, and
-both packages used its standard environment. Staged compatibility trees differed
-only in the intended lock node. Native and flake-inputs cases passed with IFD
-disabled; IFD was enabled only for the staged flake-compat cases. Builds left
+fixed. All effective input edges matched the parent source contents, including
+the fifth edge through gitignore in unflake, and both packages used the parent
+standard environment. Staged compatibility trees differed
+only in the intended lock node. Native, flake-inputs and unflake cases passed
+with IFD disabled; IFD was enabled only for the staged flake-compat cases. Builds left
 project files and upstream sources unchanged. Syntax checks and ShellCheck
-passed for all three paired exercises. Examples 01–05 and 09, existing
+passed for all three flake-related exercises. Examples 01–05 and 09, existing
 `.gitignore` edits and the moved Nixtamal result link were preserved.
 
 ## Example 09: Patch a pinned dependency and repair after an update

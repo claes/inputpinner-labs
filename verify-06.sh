@@ -175,3 +175,4 @@ done
 printf '%s\n' 'Example 06 passed: 14 native/library implementations, with IFD disabled.'
 
 ./verify-unflake.sh 06 "$@"
+printf '%s\n' 'Example 06 passed: all 20 implementations, with IFD disabled.'

@@ -75,7 +75,8 @@ graph() {
         c.upstream.inputs.git-hooks-nix.inputs.nixpkgs-stable
         c.upstream.inputs.git-hooks-nix.inputs.gitignore.inputs.nixpkgs ];
       mappedNames = builtins.attrValues names;
-      dependencyNames = builtins.attrNames u._unflake.deps;
+      # npins 0.4 exposes a callable helper alongside its actual source records.
+      dependencyNames = builtins.attrNames (builtins.removeAttrs u._unflake.deps [ \"__functor\" ]);
       deps = builtins.mapAttrs (name: id: {
         native = toString c.sources.\"\${name}\";
         resolved = toString u._unflake.deps.\"\${id}\".outPath;

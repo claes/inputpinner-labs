@@ -53,6 +53,8 @@ fetching separately from nixtamal; that would weaken this pinner comparison.
 Using npins for the whole example would avoid the custom bridge. Here npins
 is only a maintenance-time generator backend, run in a temporary directory;
 it is not a second source resolver during builds.
+Calling unflake’s internal generator could avoid that temporary stage, but
+would require a custom backend tied to its Python internals.
 
 To regenerate from scratch, use a disposable copy, remove `nix/tamal`,
 and run the initializer in a shell containing the maintenance tools:
