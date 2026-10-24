@@ -1,0 +1,8 @@
+# Nix output links and temporary files within numbered examples.
+/*/[0-9][0-9]-*/**/result
+/*/[0-9][0-9]-*/**/result-*
+/*/[0-9][0-9]-*/**/*.tmp
+# Mana stages its next lock here before replacing lock.json.
+/*/[0-9][0-9]-*/next_lock.json
+
+# Keep declarations, locks, resolvers, and recorded tool versions in Git.
