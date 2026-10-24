@@ -1,0 +1,56 @@
+{
+  "deps": {
+    "": {
+      "flake-compat": "/flake-compat",
+      "nixpkgs": "/nixpkgs",
+      "patchelf": "/patchelf"
+    }
+  },
+  "sources": {
+    "/flake-compat": {
+      "args": {
+        "owner": "NixOS",
+        "repo": "flake-compat",
+        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
+        "type": "github"
+      },
+      "locked": {
+        "lastModified": 1767039857,
+        "lastModifiedDate": "20251229202417",
+        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
+        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
+        "shortRev": "5edf11c"
+      }
+    },
+    "/nixpkgs": {
+      "args": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2efa67fd26b6df417c33e4603185c701f260dd83",
+        "type": "github"
+      },
+      "locked": {
+        "lastModified": 1791353474,
+        "lastModifiedDate": "20261007061114",
+        "narHash": "sha256-v72qr4LsSz61tQki/41nHKZKPY6NSeZavtGlAInOCng=",
+        "rev": "2efa67fd26b6df417c33e4603185c701f260dd83",
+        "shortRev": "2efa67f"
+      }
+    },
+    "/patchelf": {
+      "args": {
+        "owner": "NixOS",
+        "repo": "patchelf",
+        "rev": "3e996dbef1fa0658012f8dd290bddcf0302acade",
+        "type": "github"
+      },
+      "locked": {
+        "lastModified": 1792494619,
+        "lastModifiedDate": "20261020111019",
+        "narHash": "sha256-+c7LIYKu0pYnG7h1dsEIDs6l4+91Vh/oDrSDARdBK3o=",
+        "rev": "3e996dbef1fa0658012f8dd290bddcf0302acade",
+        "shortRev": "3e996db"
+      }
+    }
+  }
+}

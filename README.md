@@ -427,19 +427,80 @@ example files unchanged. Tests used paths containing spaces without initializati
 or pinner CLIs. ShellCheck and Nix/Bash syntax checks passed. Examples 01–06
 are unchanged, and the new directories contain no build artifacts.
 
+## Example 08: Share the parent pin through an upstream flake
+
+Keep 06’s `patchelf-demo` wrapper and the same upstream snapshot, but make
+`patchelf.packages.<system>.default` use the parent nixpkgs. In 06 the upstream
+package used its own lock; in 07 an overlay rebuilt its recipe in the parent
+package set; here the upstream flake itself receives the parent input.
+
+| Approach | Example | Sharing mechanism |
+| --- | --- | --- |
+| flake | [08-transitive-inputs](flake/08-transitive-inputs) | Native `inputs.patchelf.inputs.nixpkgs.follows` |
+| tack | [08-transitive-inputs](tack/08-transitive-inputs) | Native `all_follow` with upstream aliases |
+| niv | [08-transitive-inputs](niv/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
+| npins | [08-transitive-inputs](npins/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
+| lon | [08-transitive-inputs](lon/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
+| nixtamal | [08-transitive-inputs](nixtamal/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
+| mana | [08-transitive-inputs](mana/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
+| manual | [08-transitive-inputs](manual/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
+
+Build with `nix build path:.` for flakes, `nix-build -A patchelf-demo` for Mana,
+and `nix-build` for the others. Run `./result/bin/patchelf-demo --version` for
+`patchelf 0.19.2`. The wrapper consumes the upstream package output and forwards
+its arguments, just as in 06.
+
+Native flakes reuse the parent node through a follows edge. Tack’s parent pin
+must expose flake outputs, and its global sharing rule includes `nixpkgs-lib`
+and `nixpkgs-stable`, matching the upstream aliases at every depth. This is a
+name-based rule and should be reviewed when adding other inputs. See the
+[Nix flake input documentation](https://github.com/NixOS/nix/blob/master/src/nix/flake.md)
+and [tack’s sharing documentation](https://github.com/manic-systems/tack#follows).
+
+The source-only examples keep their original pin records. Their pinned
+flake-compat interface accepts no input or lock override. A short, commented
+`share-nixpkgs.nix` helper reads the original upstream lock, replaces its existing
+nixpkgs node, and builds a store copy with that adapted lock. The replacement
+uses the manager’s active revision and the hash of its resolved tree, expressed
+as a GitHub lock record. It may fetch that canonical source again; this creates
+no independent version selection. Existing incoming follows edges reach the new
+node, including flake-parts and git-hooks aliases. Other lock fields are retained.
+
+Importing the store copy requires import-from-derivation, so these six examples
+need `allow-import-from-derivation = true`; flakes and tack avoid that staging
+build. The helper is deliberately specific to this fixture’s GitHub nixpkgs pin
+and version-7 upstream lock. It is consumer code rather than a native capability
+of those managers. Applying an overlay or replacing only one direct outputs
+argument would skip this graph transformation. Each README explains its approach,
+limitations, and alternatives actually considered.
+
+All source snapshots, seed revisions, and maintenance versions are reused from
+06. The native flake parent lock records its new follows edge, tack’s manifest
+records its sharing policy, and the other manager locks stay unchanged. Original
+upstream sources remain immutable. No initializer or pinner CLI is needed to
+build; per-example initializers use the same maintenance tool setup as 06.
+
+`./verify-08.sh` consumes shipped pins in disposable fresh copies with spaces
+in their paths. It inspects the effective parent revision and hash at the direct
+nixpkgs edge, flake-parts’ `nixpkgs-lib`, and git-hooks’ two nixpkgs aliases.
+It checks derived trees against original sources, parent build dependencies,
+matching package and wrapper derivations, version output, and unchanged project
+files during builds. A separate case changes the active parent pin while keeping
+its initialization seed unchanged, checking update propagation.
+`./verify-08.sh --syntax-only` checks Nix and Bash syntax.
+The verifier targets `x86_64-linux`, needs Nix, jq and GNU utilities, and requires
+no pinner CLIs.
+
 ## Further examples
 
-Examples 01–07 are implemented. The remaining numbers reserve the
+Examples 01–08 are implemented. The remaining numbers reserve the
 following concepts; exact fixtures and commands will be worked out individually.
 
 | Number and name | Concept and task |
 | --- | --- |
-| 08-transitive-inputs | Make the upstream package use the parent's nixpkgs revision. |
 | 09-patches | Patch a small controlled dependency, including an update that invalidates the patch. |
 | 10-reproducibility | Explore unused inputs, offline caches, unavailable upstreams, and hash failures. |
 
-For 08, retain the patchelf snapshot from 06 and 07 so the difference focuses on
-dependency sharing.
 For 10, distinguish cached input evaluation from a build whose full closure is
 already available offline. Run destructive failure demonstrations in disposable
 copies.

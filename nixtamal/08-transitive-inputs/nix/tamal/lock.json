@@ -1,0 +1,8 @@
+{"v":"1.1.0"
+,"i":{
+"nixpkgs":{"sn":"nixpkgs-src","kd":[1,{"ft":1,"ur":"https://github.com/NixOS/nixpkgs/archive/2efa67fd26b6df417c33e4603185c701f260dd83.tar.gz","ms":[]}],"ha":{"al":0,"vl":"sha256-v72qr4LsSz61tQki/41nHKZKPY6NSeZavtGlAInOCng="},"fv":"2efa67fd26b6df417c33e4603185c701f260dd83","ps":[]}
+,"flake-compat":{"sn":"flake-compat-src","kd":[1,{"ft":1,"ur":"https://github.com/NixOS/flake-compat/archive/5edf11c44bc78a0d334f6334cdaf7d60d732daab.tar.gz","ms":[]}],"ha":{"al":0,"vl":"sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns="},"fv":"5edf11c44bc78a0d334f6334cdaf7d60d732daab","ps":[]}
+,"patchelf":{"sn":"patchelf-src","kd":[1,{"ft":1,"ur":"https://github.com/NixOS/patchelf/archive/3e996dbef1fa0658012f8dd290bddcf0302acade.tar.gz","ms":[]}],"ha":{"al":0,"vl":"sha256-+c7LIYKu0pYnG7h1dsEIDs6l4+91Vh/oDrSDARdBK3o="},"fv":"3e996dbef1fa0658012f8dd290bddcf0302acade","ps":[]}
+}
+,"p":{}
+}
