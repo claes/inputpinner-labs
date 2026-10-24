@@ -1,33 +1,44 @@
-{ system ? builtins.currentSystem }:
+{ system ? builtins.currentSystem, inputsOverrides ? {} }:
 let
-  sources = builtins.mapAttrs (_: pin: builtins.fetchTarball {
-    inherit (pin) url sha256;
+  # Fetch the recorded archives and expose each unpacked tree as a source.
+  sources = builtins.mapAttrs (_: pin: {
+    outPath = builtins.fetchTarball { inherit (pin) url sha256; };
   }) (builtins.fromJSON (builtins.readFile ./pins.json));
-  # Preserve native metadata; wrap bare source paths with outPath.
-  asSource = source:
-    if builtins.isAttrs source then source else { outPath = source; };
-  # Scope name matching to upstream's separately pinned nixpkgs.
-  fetched = builtins.mapAttrs (_: asSource) {
-    nixpkgs = sources.upstream-nixpkgs;
-    inherit (sources) patchelf flake-parts git-hooks-nix;
-  };
-  # Evaluate flake outputs from sources fetched by the native resolver.
-  inputs = (import sources.with-inputs) fetched {
-    nixpkgs-lib.follows = "nixpkgs";
-    nixpkgs-stable.follows = "nixpkgs";
+
+  # Bind sources and project self; the remaining arguments are follows and outputs.
+  with-inputs = (import sources.with-inputs) (sources // {
+    self.outPath = ./.;
+  });
+
+  # Input relationships are separate from the package definitions.
+  follows = {
+    # Keep upstream's graph separate from the parent's nixpkgs.
+    patchelf.inputs.nixpkgs.follows = "upstream-nixpkgs";
+    git-hooks-nix.inputs.nixpkgs.follows = "upstream-nixpkgs";
+    nixpkgs-lib.follows = "upstream-nixpkgs";
+    nixpkgs-stable.follows = "upstream-nixpkgs";
     # Upstream disconnects these optional development inputs too.
     flake-compat.follows = "";
     gitignore.follows = "";
   };
-  upstream = inputs.patchelf;
-  # The parent package set builds our own outputs.
-  pkgs = import sources.nixpkgs {
-    inherit system;
-    config = {};
-    overlays = [];
-  };
-  upstreamPackage = upstream.packages.${system}.default;
+
+  # Define our outputs using resolved flake inputs, like a flake outputs function.
+  outputs = inputs:
+    let
+      upstream = inputs.patchelf;
+      pkgs = import inputs.nixpkgs {
+        inherit system;
+        config = {};
+        overlays = [];
+      };
+      upstreamPackage = upstream.packages.${system}.default;
+    in
+    {
+      # Our parent-built wrapper forwards arguments to upstream's package output.
+      patchelf-demo = pkgs.writeShellScriptBin "patchelf-demo" ''
+        exec ${upstreamPackage}/bin/patchelf "$@"
+      '';
+    };
 in
-pkgs.writeShellScriptBin "patchelf-demo" ''
-  exec ${upstreamPackage}/bin/patchelf "$@"
-''
+# Caller overrides are applied after this example's follows declarations.
+with-inputs [ follows inputsOverrides ] outputs

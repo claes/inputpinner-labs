@@ -341,8 +341,8 @@ or rewrites a lock, and both work with IFD disabled. Comments show source
 resolution, adapter evaluation, package selection and the wrapper’s runtime
 reference to that package.
 
-Build with `nix build path:.` for flakes, `nix-build -A patchelf-demo` for Mana,
-and `nix-build` otherwise. Run `./result/bin/patchelf-demo --version` for
+Build with `nix build path:.` for flakes, `nix-build -A patchelf-demo` for Mana
+and with-inputs, and `nix-build` for the other source variants. Run `./result/bin/patchelf-demo --version` for
 `patchelf 0.19.2`. The wrapper forwards arguments to the upstream executable.
 
 `./verify-06.sh` checks all 26 implementations against the directly evaluated
@@ -403,24 +403,34 @@ initialization or unflake installed, and with IFD disabled.
 
 The `-with-inputs` variants use
 [denful/with-inputs](https://github.com/denful/with-inputs/tree/641d01ef95eae1aeaa257ffd48102ab9a308f2a2)
-as a direct Nix evaluator of prefetched sources. Each native pinner owns all six
-pins in 06/07 and all five in 08. No generated evaluator or second pinner is
-needed. A small `outPath` wrapper normalizes bare paths while retaining metadata
-from native source records.
+and its complete sources → follows → outputs interface. Each example keeps the
+four named bindings together in one file: `sources`, `with-inputs`, `follows`
+and `outputs`. The final call is `with-inputs [ follows inputsOverrides ] outputs`.
+The loader binds sources first, and caller overrides follow the example's own
+declarations. `system` remains optional. The public result includes `.inputs`,
+`.outputs` and project `self`, alongside the named packages.
 
-A scoped four-source input set uses upstream's original nixpkgs in 06/07 and the
-parent nixpkgs in 08. Aliases share that selected source with flake-parts and
-git-hooks-nix; empty follows disconnect upstream's optional development inputs.
-Example 08 explicitly declares `patchelf.inputs.nixpkgs.follows = "nixpkgs"`.
-Automatic matching by name is possible but less explicit. The library's
-`from.flake` fetcher is another alternative; the generic source API keeps pin
-ownership with the pinner being compared.
+Niv, npins and Lon use the built-in `.from.*` loaders. Nixtamal's evaluation-time
+archives return bare paths, so its local source binding wraps them as `outPath`
+records; this preserves IFD-free builds instead of adopting upstream's
+build-time fetcher template. Mana uses its native dependency injection, and
+manual uses its recorded archive fetches. Nixtamal, Mana and manual bind sources
+and project `self` through the generic API. All teaching logic stays in `default.nix`, or Mana's
+existing `entrypoint.nix`; no extra bootstrap, follows or outputs files are added.
 
-`verify-with-inputs.sh` checks the six added implementations per exercise against
-the native reference, including effective input paths, derivations, outputs,
-parent compiler use, immutable source files and parent-only updates in 08.
-All with-inputs cases disable import from derivation and consume the shipped
-native resolver directly, including in paths containing spaces.
+Each native pinner still owns six pins in 06/07 and five in 08. Explicit follows
+select `upstream-nixpkgs` throughout patchelf's graph in 06/07 and parent
+`nixpkgs` in 08. Aliases cover flake-parts and git-hooks-nix; empty follows
+disconnect optional development inputs. Automatic matching by name and the
+library's `from.flake` fetcher are documented alternatives.
+
+Build all six pinners' 06 variants with `nix-build -A patchelf-demo`, and 07 with
+`nix-build -A patchelf-new`. Example 08 keeps `-A hello` and `-A patchelf`.
+`verify-with-inputs.sh` inspects public inputs and named outputs directly,
+including `inputs.self`, caller overrides, native pin preservation and parent-only
+updates in 08. It checks matching derivations and builds, compiler dependencies,
+and immutable files in fresh copies with spaces in their paths. All with-inputs
+cases disable import from derivation and consume the shipped native resolver.
 
 ## Example 07: Apply an upstream flake overlay with flake libraries
 
@@ -446,7 +456,7 @@ All variants evaluate the overlay without IFD. Each README explains its
 selected interface and alternatives, including the generated unflake evaluator and direct with-inputs evaluation.
 
 Build with `nix build path:.#patchelf-new` for flakes,
-`nix-build -A patchelf-new` for Mana, and `nix-build` otherwise. Run
+`nix-build -A patchelf-new` for Mana and with-inputs, and `nix-build` otherwise. Run
 `./result/bin/patchelf --version` for `patchelf 0.19.2`; the attribute name does
 not rename the executable.
 

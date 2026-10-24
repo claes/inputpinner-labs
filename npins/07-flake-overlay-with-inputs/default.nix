@@ -1,29 +1,37 @@
-{ system ? builtins.currentSystem }:
+{ system ? builtins.currentSystem, inputsOverrides ? {} }:
 let
+  # Read the sources already fetched by the native pinner.
   sources = import ./npins;
-  # Preserve native metadata; wrap bare source paths with outPath.
-  asSource = source:
-    if builtins.isAttrs source then source else { outPath = source; };
-  # Scope name matching to upstream's separately pinned nixpkgs.
-  fetched = builtins.mapAttrs (_: asSource) {
-    nixpkgs = sources.upstream-nixpkgs;
-    inherit (sources) patchelf flake-parts git-hooks-nix;
-  };
-  # Evaluate flake outputs from sources fetched by the native resolver.
-  inputs = (import sources.with-inputs) fetched {
-    nixpkgs-lib.follows = "nixpkgs";
-    nixpkgs-stable.follows = "nixpkgs";
+
+  # The library loader binds sources and project self; follows and outputs come below.
+  with-inputs = (import sources.with-inputs).from.npins ./.;
+
+  # Input relationships are separate from the package definitions.
+  follows = {
+    # Keep upstream's graph separate from the parent's nixpkgs.
+    patchelf.inputs.nixpkgs.follows = "upstream-nixpkgs";
+    git-hooks-nix.inputs.nixpkgs.follows = "upstream-nixpkgs";
+    nixpkgs-lib.follows = "upstream-nixpkgs";
+    nixpkgs-stable.follows = "upstream-nixpkgs";
     # Upstream disconnects these optional development inputs too.
     flake-compat.follows = "";
     gitignore.follows = "";
   };
-  upstream = inputs.patchelf;
-  # The parent package set builds our own outputs.
-  pkgs = import sources.nixpkgs {
-    inherit system;
-    config = {};
-    overlays = [ upstream.overlays.default ];
-  };
+
+  # Define our outputs using resolved flake inputs, like a flake outputs function.
+  outputs = inputs:
+    let
+      upstream = inputs.patchelf;
+      pkgs = import inputs.nixpkgs {
+        inherit system;
+        config = {};
+        overlays = [ upstream.overlays.default ];
+      };
+    in
+    {
+      # The overlay adds this attribute and preserves the original pkgs.patchelf.
+      patchelf-new = pkgs.patchelf-new;
+    };
 in
-# The overlay adds a new attribute, preserving pkgs.patchelf.
-pkgs.patchelf-new
+# Caller overrides are applied after this example's follows declarations.
+with-inputs [ follows inputsOverrides ] outputs

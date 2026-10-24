@@ -51,43 +51,51 @@ records() {
   esac
 }
 revision() { records "$1" "$2" | jq -r --arg name "$3" '.[$name] | .rev // .revision // .fv // .locked.rev'; }
-# Read the consumer's actual let bindings rather than reconstructing its graph.
+# Inspect the public project interface; no source rewriting or private bindings.
 graph() {
-  local example=$1 consumer=default.nix capture='import ./capture.nix {}'
-  if [[ $approach == mana ]]; then
-    consumer=entrypoint.nix
-    capture='(import ./nix/importer.nix { manifest = (import ./mana.nix) // { entrypoint = ./capture.nix; }; }) {}'
-  fi
-  sed '/^in$/,$d' "$example/$consumer" > "$example/capture.nix"
-  printf 'in { inherit sources pkgs upstream; }\n' >> "$example/capture.nix"
+  local example=$1 override=${2:-false}
   (cd "$example" && nix eval --impure --json --expr "
-    let c = ($capture);
-        consumer = import ./. {};
+    let
+      project = import ./. (if $override then {
+        inputsOverrides.nixpkgs.outPath = builtins.fetchTarball {
+          url = \"https://github.com/NixOS/nixpkgs/archive/$old.tar.gz\";
+          sha256 = \"$old_hash\";
+        };
+      } else {});
+      inputs = project.inputs;
+      upstream = inputs.patchelf;
+      pkgs = import inputs.nixpkgs {
+        system = \"$system\";
+        config = {};
+        overlays = if \"$number\" == \"07\" then [ upstream.overlays.default ] else [];
+      };
     in {
-      parent = toString c.sources.nixpkgs;
-      upstreamSource = toString c.sources.patchelf;
-      paths = map toString [ c.upstream.inputs.nixpkgs
-        c.upstream.inputs.flake-parts.inputs.nixpkgs-lib
-        c.upstream.inputs.git-hooks-nix.inputs.nixpkgs
-        c.upstream.inputs.git-hooks-nix.inputs.nixpkgs-stable ];
-      disconnected = c.upstream.inputs.git-hooks-nix.inputs.flake-compat == {}
-        && c.upstream.inputs.git-hooks-nix.inputs.gitignore == {};
-      adapterSource = toString c.sources.with-inputs;
-      packageDrv = c.upstream.packages.\"$system\".default.drvPath;
-      packageOut = c.upstream.packages.\"$system\".default.outPath;
-      originalVersion = c.pkgs.patchelf.version;
-      stdenvDrv = c.pkgs.stdenv.drvPath;
-      dynamicLinker = c.pkgs.stdenv.cc.bintools.dynamicLinker;
+      parent = toString inputs.nixpkgs;
+      upstreamSource = toString inputs.patchelf;
+      paths = map toString [ upstream.inputs.nixpkgs
+        upstream.inputs.flake-parts.inputs.nixpkgs-lib
+        upstream.inputs.git-hooks-nix.inputs.nixpkgs
+        upstream.inputs.git-hooks-nix.inputs.nixpkgs-stable ];
+      disconnected = upstream.inputs.git-hooks-nix.inputs.flake-compat == {}
+        && upstream.inputs.git-hooks-nix.inputs.gitignore == {};
+      adapterSource = toString inputs.with-inputs;
+      outputNames = builtins.attrNames project.outputs;
+      selfWorks = project._type == \"flake\"
+        && toString inputs.self.outPath == toString ./.
+        && builtins.attrNames inputs.self.outputs == builtins.attrNames project.outputs
+        && toString inputs.self.inputs.nixpkgs == toString inputs.nixpkgs;
+      packageDrv = upstream.packages.\"$system\".default.drvPath;
+      packageOut = upstream.packages.\"$system\".default.outPath;
+      originalVersion = pkgs.patchelf.version;
+      stdenvDrv = pkgs.stdenv.drvPath;
+      dynamicLinker = pkgs.stdenv.cc.bintools.dynamicLinker;
       consumer = if \"$number\" == \"06\" then
-        (let p = if \"$approach\" == \"mana\" then consumer.patchelf-demo else consumer;
-         in { drv = p.drvPath; out = p.outPath; })
+        { drv = project.patchelf-demo.drvPath; out = project.patchelf-demo.outPath; }
       else if \"$number\" == \"07\" then
-        (let p = if \"$approach\" == \"mana\" then consumer.patchelf-new else consumer;
-         in { drv = p.drvPath; out = p.outPath; })
-      else { drv = consumer.patchelf.drvPath; out = consumer.patchelf.outPath;
-             helloDrv = consumer.hello.drvPath; helloOut = consumer.hello.outPath; };
-    }") || return
-  rm -- "$example/capture.nix"
+        { drv = project.patchelf-new.drvPath; out = project.patchelf-new.outPath; }
+      else { drv = project.patchelf.drvPath; out = project.patchelf.outPath;
+             helloDrv = project.hello.drvPath; helloOut = project.hello.outPath; };
+    }")
 }
 declare -A hashes
 hash() {
@@ -124,7 +132,13 @@ check() {
   hash "$(jq -r .upstreamSource <<< "$info")" "$patchelf_hash"
   hash "$(jq -r .adapterSource <<< "$info")" 'sha256-y98sqtCGDKnD90PMK5qV3ux94sg/Fc/8Ka9+T8YeieE='
   while IFS= read -r path; do hash "$path" "$expected_upstream_hash"; done < <(jq -r '.paths[]' <<< "$info")
-  jq -e .disconnected <<< "$info" > /dev/null
+  jq -e '.disconnected and .selfWorks' <<< "$info" > /dev/null
+  case $number in
+    06) expected_names='["patchelf-demo"]' ;;
+    07) expected_names='["patchelf-new"]' ;;
+    08) expected_names='["hello","patchelf"]' ;;
+  esac
+  [[ $(jq -c .outputNames <<< "$info") == "$expected_names" ]]
   if [[ $number == 08 ]]; then
     jq -e '.parent as $parent | all(.paths[]; . == $parent)' <<< "$info" > /dev/null
     (cd "$example" && nix-build -A hello -o result-hello && nix-build -A patchelf -o result-patchelf)
@@ -138,12 +152,8 @@ check() {
     [[ $(jq -r .consumer.helloDrv <<< "$info") == "$expected_hello" ]]
     [[ $("$example/result-patchelf/bin/patchelf" --print-interpreter "$example/result-hello/bin/hello") == "$(jq -r .dynamicLinker <<< "$info")" ]]
   else
-    if [[ $approach == mana ]]; then
-      if [[ $number == 06 ]]; then attribute=patchelf-demo; else attribute=patchelf-new; fi
-      (cd "$example" && nix-build -A "$attribute")
-    else
-      (cd "$example" && nix-build)
-    fi
+    if [[ $number == 06 ]]; then attribute=patchelf-demo; else attribute=patchelf-new; fi
+    (cd "$example" && nix-build -A "$attribute")
     [[ $(readlink -f "$example/result") == "$(jq -r .consumer.out <<< "$info")" ]]
     if [[ $number == 06 ]]; then
       [[ $("$example/result/bin/patchelf-demo" --version) == 'patchelf 0.19.2' ]]
@@ -161,6 +171,9 @@ check() {
 }
 initial_drv=$(jq -r .drv <<< "$reference")
 expected_hello=$(jq -r .helloDrv <<< "$reference")
+if [[ $number == 08 ]]; then
+  alternate_hello=$(nix eval --raw "github:NixOS/nixpkgs/$old#legacyPackages.$system.hello.drvPath")
+fi
 for approach in "${approaches[@]}"; do
   relative="$approach/$number-$slug-with-inputs"
   example="$scratch/lab with spaces/$relative"
@@ -179,6 +192,20 @@ for approach in "${approaches[@]}"; do
   expected_drv=$initial_drv
   if [[ $number == 08 ]]; then upstream_hash=$parent_hash; else upstream_hash=$old_hash; fi
   check "$example" "$parent_hash" "$upstream_hash"
+  if [[ $number == 08 ]]; then
+    # Exercise the public override argument without modifying native records.
+    before_override=$(fingerprint "$example")
+    override_info=$(graph "$example" true)
+    hash "$(jq -r .parent <<< "$override_info")" "$old_hash"
+    jq -e '.selfWorks and .disconnected and
+      (.parent as $parent | all(.paths[]; . == $parent))' <<< "$override_info" > /dev/null
+    [[ $(jq -r .consumer.drv <<< "$override_info") == "$upstream_drv" &&
+       $(jq -r .consumer.helloDrv <<< "$override_info") == "$alternate_hello" &&
+       $(jq -r .consumer.drv <<< "$override_info") != "$initial_drv" &&
+       $(jq -r .consumer.helloDrv <<< "$override_info") != "$expected_hello" &&
+       $(fingerprint "$example") == "$before_override" ]]
+    printf '%s: caller override changed both packages without changing project files\n' "$relative"
+  fi
   if [[ ${1:-} != --updates ]]; then continue; fi
   before_records=$(records "$approach" "$example" | jq -cS 'del(.nixpkgs)')
   consumer_file=default.nix
@@ -197,7 +224,7 @@ for approach in "${approaches[@]}"; do
      $(sha256sum "$example/$consumer_file" | cut -d ' ' -f1) == "$evaluator_before" &&
      $(cat "$example/revision") == "$parent" ]]
   expected_drv=$upstream_drv
-  expected_hello=$(nix eval --raw "github:NixOS/nixpkgs/$old#legacyPackages.$system.hello.drvPath")
+  expected_hello=$alternate_hello
   [[ $expected_drv != "$initial_drv" && $expected_hello != "$initial_hello" ]]
   check "$example" "$old_hash" "$old_hash"
   expected_hello=$initial_hello
