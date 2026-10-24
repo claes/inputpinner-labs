@@ -307,23 +307,77 @@ Checkout preparation refused to overwrite local work, and cleanup preserved
 checkout files and links, including a file named `keep.tmp`. ShellCheck and
 Nix/Bash syntax checks passed. Examples 01–04 are unchanged.
 
+## Example 06: Use an upstream flake package
+
+Each project builds `patchelf-demo`, a small shell wrapper whose executable comes
+from `NixOS/patchelf`’s `packages.<system>.default`. The consumer’s nixpkgs creates
+the wrapper; the upstream package keeps its own dependency graph.
+
+The shared upstream snapshot is
+[`3e996dbef1fa0658012f8dd290bddcf0302acade`](https://github.com/NixOS/patchelf/tree/3e996dbef1fa0658012f8dd290bddcf0302acade).
+The source-only variants separately pin
+[flake-compat at `5edf11c44bc78a0d334f6334cdaf7d60d732daab`](https://github.com/NixOS/flake-compat/tree/5edf11c44bc78a0d334f6334cdaf7d60d732daab)
+to evaluate outputs from the pinner-resolved source. The parent nixpkgs remains
+at the same snapshot as earlier examples. Patchelf’s own lock selects nixpkgs
+`c69a9bffbecde46b4b939465422ddc59493d3e4d`; it is deliberately retained.
+
+| Approach | Example | Flake output evaluation |
+| --- | --- | --- |
+| flake | [06-flake-package](flake/06-flake-package) | Native flake input |
+| niv | [06-flake-package](niv/06-flake-package) | Pinned flake-compat adapter |
+| npins | [06-flake-package](npins/06-flake-package) | Pinned flake-compat adapter |
+| lon | [06-flake-package](lon/06-flake-package) | Pinned flake-compat adapter |
+| nixtamal | [06-flake-package](nixtamal/06-flake-package) | Pinned flake-compat adapter |
+| tack | [06-flake-package](tack/06-flake-package) | Native flake pin |
+| mana | [06-flake-package](mana/06-flake-package) | Pinned flake-compat adapter |
+| manual | [06-flake-package](manual/06-flake-package) | Pinned flake-compat adapter |
+
+Build with `nix build path:.` for flakes, `nix-build -A patchelf-demo` for Mana,
+and `nix-build` for the others. Run `./result/bin/patchelf-demo --version` for
+`patchelf 0.19.2`. No initialization or maintenance tool is required to build.
+The README and commented expression in each directory explain the approach,
+important boundaries, alternatives, and reproducible initialization commands.
+
+The wrapper demonstrates an upstream flake output used as an input to our own
+derivation, rather than importing the repository as a package set or selecting
+patchelf from the parent nixpkgs. Flakes and tack handle the upstream flake
+natively. The other examples fetch sources and explicitly evaluate the flake
+with the adapter. No `follows` rule or upstream lock rewrite is introduced.
+The package, overlay, and dependency-sharing cases remain separate examples.
+
+Upstream supports `x86_64-linux`, `i686-linux`, and `aarch64-linux`; the flake
+wrapper exports those same systems. The verifier targets `x86_64-linux`.
+`./verify-06.sh` checks shared source revisions and hashes, retained upstream
+locks, matching package and wrapper derivations, executable dependencies,
+argument forwarding, version output, and unchanged files during builds.
+`./verify-06.sh --syntax-only` checks Nix and Bash syntax. The full verifier
+uses disposable fresh copies in paths with spaces, needs Nix, jq and GNU
+utilities, and requires no pinner CLIs. As in earlier examples, Nix needs its
+experimental `nix-command` and `flakes` features enabled.
+
+Validated on `x86_64-linux` with Nix 2.34.8. All eight fresh copies built the
+same wrapper derivation and referenced the exact package obtained by directly
+building the pinned upstream flake output. Every wrapper reported
+`patchelf 0.19.2` and forwarded `--print-interpreter` correctly. Source hashes,
+compatibility adapter revisions, and upstream locks matched; the parent and
+upstream nixpkgs pins stayed separate. Builds left example files unchanged.
+Tests used paths containing spaces and required no initialization or pinner CLIs.
+ShellCheck and Nix/Bash syntax checks passed. Examples 01–05 are unchanged.
+
 ## Further examples
 
-Examples 01–05 are implemented. The remaining numbers reserve the
+Examples 01–06 are implemented. The remaining numbers reserve the
 following concepts; exact fixtures and commands will be worked out individually.
 
 | Number and name | Concept and task |
 | --- | --- |
-| 06-flake-package | Wrap `NixOS/patchelf`'s `packages.<system>.default` and run `--version`. |
 | 07-flake-overlay | Apply patchelf's `overlays.default` to the parent's nixpkgs; build `patchelf-new`. |
 | 08-transitive-inputs | Make the upstream package use the parent's nixpkgs revision. |
 | 09-patches | Patch a small controlled dependency, including an update that invalidates the patch. |
 | 10-reproducibility | Explore unused inputs, offline caches, unavailable upstreams, and hash failures. |
 
-For 06, pin the same patchelf commit everywhere and retain its upstream locks.
-Use native flake consumption where supported and a pinned `flake-compat` adapter
-for source-only consumers. Keep package, overlay, and dependency-sharing examples
-separate. Document limitations where a tool cannot express an equivalent workflow.
+For 07 and 08, retain the patchelf snapshot from 06 so the differences focus on
+overlay application and dependency sharing.
 For 10, distinguish cached input evaluation from a build whose full closure is
 already available offline. Run destructive failure demonstrations in disposable
 copies.

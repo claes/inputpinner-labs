@@ -1,0 +1,44 @@
+{
+  "pins": {
+    "flake-compat": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "NixOS",
+        "repo": "flake-compat"
+      },
+      "branch": "master",
+      "submodules": false,
+      "revision": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
+      "url": "https://github.com/NixOS/flake-compat/archive/5edf11c44bc78a0d334f6334cdaf7d60d732daab.tar.gz",
+      "hash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns="
+    },
+    "nixpkgs": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "NixOS",
+        "repo": "nixpkgs"
+      },
+      "branch": "nixos-26.05",
+      "submodules": false,
+      "revision": "2efa67fd26b6df417c33e4603185c701f260dd83",
+      "url": "https://github.com/NixOS/nixpkgs/archive/2efa67fd26b6df417c33e4603185c701f260dd83.tar.gz",
+      "hash": "sha256-v72qr4LsSz61tQki/41nHKZKPY6NSeZavtGlAInOCng="
+    },
+    "patchelf": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "NixOS",
+        "repo": "patchelf"
+      },
+      "branch": "master",
+      "submodules": false,
+      "revision": "3e996dbef1fa0658012f8dd290bddcf0302acade",
+      "url": "https://github.com/NixOS/patchelf/archive/3e996dbef1fa0658012f8dd290bddcf0302acade.tar.gz",
+      "hash": "sha256-+c7LIYKu0pYnG7h1dsEIDs6l4+91Vh/oDrSDARdBK3o="
+    }
+  },
+  "version": 7
+}
