@@ -1,0 +1,13 @@
+{
+  "nixpkgs": {
+    "revision": "2efa67fd26b6df417c33e4603185c701f260dd83",
+    "url": "https://github.com/NixOS/nixpkgs/archive/2efa67fd26b6df417c33e4603185c701f260dd83.tar.gz",
+    "sha256": "0y0ars4h19fiprdfcjcdiqylm9hwcy6zy8h9nnskwjzchapsmgdz"
+  },
+  "systems": {
+    "branch": "main",
+    "revision": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+    "url": "https://github.com/nix-systems/default/archive/da67096a3b9bf56a91d16901293e51ba5b49a27e.tar.gz",
+    "sha256": "1bzg89hgcr2gvza35vqi4n1jbb2gz1yg4b8p7gry4ihsj2mnnbap"
+  }
+}

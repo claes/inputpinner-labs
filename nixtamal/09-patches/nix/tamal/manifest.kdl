@@ -1,0 +1,22 @@
+version "1.1.0"
+inputs {
+    nixpkgs {
+        archive fetch-time=eval {
+            url "https://github.com/NixOS/nixpkgs/archive/{{fresh_value}}.tar.gz"
+        }
+        hash algorithm=SHA-256
+        fresh-cmd {
+            $ echo "2efa67fd26b6df417c33e4603185c701f260dd83"
+        }
+    }
+    systems {
+        // Fixed fixtures make the patch-failure demonstration repeatable.
+        archive fetch-time=eval {
+            url "https://github.com/nix-systems/default/archive/{{fresh_value}}.tar.gz"
+        }
+        hash algorithm=SHA-256
+        fresh-cmd {
+            $ echo "da67096a3b9bf56a91d16901293e51ba5b49a27e"
+        }
+    }
+}

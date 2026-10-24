@@ -503,14 +503,77 @@ required no pinner CLIs or initialization. ShellCheck and Nix/Bash syntax checks
 passed. Examples 01–07 are unchanged; no build artifacts remain in the new
 project directories.
 
+## Example 09: Patch a pinned dependency and repair after an update
+
+Each [09-patches](manual/09-patches/README.md) example reuses 03’s small
+`nix-systems/default` source. A local patch replaces `x86_64-darwin` with
+`riscv64-linux`. The normal Nixpkgs patch phase runs in an unpacked build copy;
+the original source pin and its fetch hash remain unchanged. The artifact is a
+single Nix file containing the patched list. No compiler, adapter library or
+import-from-derivation is needed.
+
+| Approach | Example | Fixed source update |
+| --- | --- | --- |
+| flake | [09-patches](flake/09-patches) | Override just the systems lock |
+| niv | [09-patches](niv/09-patches) | Update systems with an explicit revision |
+| npins | [09-patches](npins/09-patches) | Replace the named pin with `--at` |
+| lon | [09-patches](lon/09-patches) | Modify systems with an explicit revision |
+| nixtamal | [09-patches](nixtamal/09-patches) | Change the freshness command, refresh systems |
+| tack | [09-patches](tack/09-patches) | Change the manifest URL, update systems |
+| mana | [09-patches](mana/09-patches) | Change the manifest URL, update systems |
+| manual | [09-patches](manual/09-patches) | Fetch the archive, replace systems URL/revision/hash |
+
+Build with `nix build path:.` for flakes, `nix-build -A systems` for Mana,
+and `nix-build` for the others. Read the file with `cat result`, or evaluate the
+completed artifact with `nix eval --json --file ./result`. Its list contains
+`aarch64-darwin`, `aarch64-linux`, `riscv64-linux`, and `x86_64-linux`.
+
+In a disposable copy, `./update.sh` selects the immutable second fixture recorded
+in `updated-systems-revision`. That upstream commit already removed the entry
+our original patch replaces. Source locking succeeds, but the next build must
+fail with a rejected patch hunk. Review upstream’s change and the supplied
+`local.after-update.patch`, then explicitly copy it to `local.patch` and rebuild.
+The repaired patch adds the desired entry, restoring the same final list.
+Updates never drop or repair patches automatically; nixpkgs stays pinned.
+Per-example READMEs include maintenance CLI bootstrap commands and alternatives
+considered, including Nixtamal’s native patch management.
+
+`./verify-09.sh` builds the shipped state in disposable copies whose paths contain
+spaces, without initialization or pinner CLIs. `./verify-09.sh --updates` also
+runs all native update commands, confirms the specific patch-hunk rejection,
+and tests the explicit repair. It checks exact source revisions and hashes,
+identical output bytes and evaluated lists, retained nixpkgs records, and unchanged
+project files during both successful and failed builds. Strict patch flags disable
+fuzz and reverse application. Derivations are compared within each native source
+path group: niv and Nixtamal use `systems-src`, while the other tools use `source`.
+Their fetched contents and patched artifacts match despite differing store paths.
+Mana maintenance temporarily uses a path without spaces because of its pinned
+CLI’s cwd quoting bug; its builds still run in the spaced path.
+`./verify-09.sh --syntax-only` checks Nix and Bash syntax. Full verification
+targets `x86_64-linux` and needs Nix, jq, GNU utilities, and (only for `--updates`)
+the maintenance CLIs:
+
+```sh
+nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/2efa67fd26b6df417c33e4603185c701f260dd83.tar.gz \
+  -p niv npins lon nixtamal.bin tack --run './verify-09.sh --updates'
+```
+
+Validated on `x86_64-linux` with Nix 2.34.8. All eight starting builds passed,
+all eight fixed updates produced the intended patch-hunk failure, and all eight
+explicit repairs restored identical output contents. Native nixpkgs records
+remained unchanged. Builds used paths containing spaces and left declarations,
+locks, and patches untouched. Initial derivations formed two source-path groups;
+outputs matched across both. The three adapted initializers (Nixtamal, tack and
+Mana) also regenerated the starting pins and built successfully in fresh copies.
+ShellCheck and Nix/Bash syntax checks passed. Examples 01–08 are unchanged, and the new directories contain no build artifacts.
+
 ## Further examples
 
-Examples 01–08 are implemented. The remaining numbers reserve the
+Examples 01–09 are implemented. The remaining numbers reserve the
 following concepts; exact fixtures and commands will be worked out individually.
 
 | Number and name | Concept and task |
 | --- | --- |
-| 09-patches | Patch a small controlled dependency, including an update that invalidates the patch. |
 | 10-reproducibility | Explore unused inputs, offline caches, unavailable upstreams, and hash failures. |
 
 For 10, distinguish cached input evaluation from a build whose full closure is
