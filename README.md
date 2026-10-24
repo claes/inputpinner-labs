@@ -246,14 +246,74 @@ entry and derivation. Both initial and updated builds left their example files
 unchanged. ShellCheck and Nix/Bash syntax checks passed. The shipped locks retain
 the starting snapshots; examples 01–03 are unchanged. Build artifacts were cleaned.
 
+## Example 05: Temporary local overrides
+
+Reuse the locked `nix-systems/default` snapshot from 03, then substitute an
+editable checkout. Each `prepare-local.sh` clones the upstream repository,
+checks out `da67096a3b9bf56a91d16901293e51ba5b49a27e`, and adds `riscv64-linux`
+to its Nix list. The output is text, so no cross-compilation is involved.
+`build-local.sh` uses this working tree for one invocation. A normal build returns
+to the saved remote pin while the checkout and its edits remain available.
+
+| Approach | Example | Local override |
+| --- | --- | --- |
+| flake | [05-local-overrides](flake/05-local-overrides) | `--override-input` plus `--no-write-lock-file` |
+| niv | [05-local-overrides](niv/05-local-overrides) | `NIV_OVERRIDE_systems` |
+| npins | [05-local-overrides](npins/05-local-overrides) | `NPINS_OVERRIDE_systems` |
+| lon | [05-local-overrides](lon/05-local-overrides) | `LON_OVERRIDE_systems` |
+| nixtamal | [05-local-overrides](nixtamal/05-local-overrides) | Explicit `systemsPath` argument at the import step |
+| tack | [05-local-overrides](tack/05-local-overrides) | Native resolver `overrides.systems` argument |
+| mana | [05-local-overrides](mana/05-local-overrides) | Explicit `systemsPath` argument in the entrypoint |
+| manual | [05-local-overrides](manual/05-local-overrides) | Explicit `systemsPath` argument instead of the locked archive |
+
+Build the remote output with `nix build path:.` for flakes,
+`nix-build -A systems` for Mana, or `nix-build` for the other approaches.
+Run `cat result` for the original four-line list. Then run `./prepare-local.sh`,
+`./build-local.sh`, and `cat result-local` to see the added fifth line.
+Further edits are picked up by the next local build. Running the normal build
+again restores the original result without modifying the lock or removing the
+checkout. `build-local.sh` optionally accepts an existing checkout path.
+
+The flake command passes an absolute checkout path, inferred as a Git input;
+uncommitted tracked-file edits are included, and new files require `git add`.
+The environment hooks use legacy impure evaluation. Tack supplies a native
+resolver argument. Nixtamal and the pinned Mana importer lack a general raw-source
+replacement hook in their generated interfaces; these examples select the path
+explicitly in the consumer. No additional library is needed. Per-example READMEs
+explain the choices and alternatives, and scripts comment the relevant steps.
+
+All remote locks, resolvers, seed files, and version records are included, copied
+from 03. Builds need no pinner CLI or initialization. Preparing a local checkout
+needs Git and network access; the neutral Git environment described above applies
+if the host rewrites public HTTPS URLs to SSH. Existing checkouts are protected
+from accidental replacement. Their Git metadata and local edits are excluded from
+version control and preserved by `clean.sh`; only disposable build artifacts
+outside the checkouts are cleaned.
+
+`./verify-05.sh` performs the exercise entirely in disposable copies, with spaces
+in their paths. It checks remote output, a real checkout at the locked commit,
+two uncommitted local edits, matching derivations across approaches, restoration
+of the remote pin, unchanged locks and source files during builds, and cleanup
+that preserves local source. It does not modify your development checkouts.
+It requires Nix, Git, jq, GNU tar and the usual GNU utilities; maintenance CLIs
+are unnecessary. `./verify-05.sh --syntax-only` checks Nix and Bash syntax.
+
+Validated on `x86_64-linux` with Nix 2.34.8. All eight approaches produced
+matching remote, first local, and second local derivations, then returned to the
+original remote output. Locks and example sources stayed unchanged during builds;
+checkouts remained unchanged except for the deliberate edits. Tests used fresh
+copies in paths containing spaces, without initialization or pinner CLIs.
+Checkout preparation refused to overwrite local work, and cleanup preserved
+checkout files and links, including a file named `keep.tmp`. ShellCheck and
+Nix/Bash syntax checks passed. Examples 01–04 are unchanged.
+
 ## Further examples
 
-Examples 01–04 are implemented. The remaining numbers reserve the
+Examples 01–05 are implemented. The remaining numbers reserve the
 following concepts; exact fixtures and commands will be worked out individually.
 
 | Number and name | Concept and task |
 | --- | --- |
-| 05-local-overrides | Replace the systems input with a local checkout, then restore the remote pin. |
 | 06-flake-package | Wrap `NixOS/patchelf`'s `packages.<system>.default` and run `--version`. |
 | 07-flake-overlay | Apply patchelf's `overlays.default` to the parent's nixpkgs; build `patchelf-new`. |
 | 08-transitive-inputs | Make the upstream package use the parent's nixpkgs revision. |

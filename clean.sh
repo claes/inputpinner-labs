@@ -15,7 +15,8 @@ for approach in flake niv npins nixtamal tack lon mana manual; do
 
     # Unlink build outputs without touching their targets in the Nix store.
     # Abandoned *.tmp files and Mana's staged next lock are also disposable.
-    find "$example" \
+    # Local development checkouts are source, including any *.tmp files in them.
+    find "$example" ! -path "$example/local-systems/*" \
       \( -type l \( -name result -o -name 'result-*' \) \
       -o -type f \( -name '*.tmp' -o -name next_lock.json \) \) \
       -print -delete
