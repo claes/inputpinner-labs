@@ -1,0 +1,62 @@
+{
+    "flake-parts": {
+        "branch": "main",
+        "description": "❄️ Simplify Nix Flakes with the module system",
+        "homepage": "https://flake.parts",
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "rev": "205b12d8b7cd4802fbcb8e8ef6a0f1408781a4f9",
+        "sha256": "1izkry4mkiscnglnrmly5kyn4586n04xy3pwj38hg06ym77fz472",
+        "type": "tarball",
+        "url": "https://github.com/hercules-ci/flake-parts/archive/205b12d8b7cd4802fbcb8e8ef6a0f1408781a4f9.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "git-hooks-nix": {
+        "branch": "master",
+        "description": "Seamless integration of https://pre-commit.com git hooks with Nix.",
+        "homepage": "",
+        "owner": "cachix",
+        "repo": "git-hooks.nix",
+        "rev": "aa9f40c906904ebd83da78e7f328cd8aeaeae785",
+        "sha256": "13f2qajg6y943ai51khlfc1srzing45mrpbc66cci9ygl6nq5mim",
+        "type": "tarball",
+        "url": "https://github.com/cachix/git-hooks.nix/archive/aa9f40c906904ebd83da78e7f328cd8aeaeae785.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs": {
+        "branch": "nixos-26.05",
+        "description": "Nix Packages collection & NixOS",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2efa67fd26b6df417c33e4603185c701f260dd83",
+        "sha256": "0y0ars4h19fiprdfcjcdiqylm9hwcy6zy8h9nnskwjzchapsmgdz",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/2efa67fd26b6df417c33e4603185c701f260dd83.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "patchelf": {
+        "branch": "master",
+        "description": "A small utility to modify the dynamic linker and RPATH of ELF executables",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "patchelf",
+        "rev": "3e996dbef1fa0658012f8dd290bddcf0302acade",
+        "sha256": "0yib84bh30xl1vl1ymkmxzisbkhf130pcxdq3ckrdlmfh8hwpkpr",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/patchelf/archive/3e996dbef1fa0658012f8dd290bddcf0302acade.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "with-inputs": {
+        "branch": "main",
+        "description": "A flake-inputs adapter for Nix projects that don't use `flake.nix`.",
+        "homepage": "https://denful.dev/ecosystem/with-inputs/",
+        "owner": "denful",
+        "repo": "with-inputs",
+        "rev": "641d01ef95eae1aeaa257ffd48102ab9a308f2a2",
+        "sha256": "1qc93v34yzmg57ycy59zr3i7vv6yjnd2pk23yz1sj346s2m2rpyb",
+        "type": "tarball",
+        "url": "https://github.com/denful/with-inputs/archive/641d01ef95eae1aeaa257ffd48102ab9a308f2a2.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}

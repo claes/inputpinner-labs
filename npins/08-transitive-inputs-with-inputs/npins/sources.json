@@ -1,0 +1,70 @@
+{
+  "pins": {
+    "flake-parts": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "hercules-ci",
+        "repo": "flake-parts"
+      },
+      "branch": "main",
+      "submodules": false,
+      "revision": "205b12d8b7cd4802fbcb8e8ef6a0f1408781a4f9",
+      "url": "https://github.com/hercules-ci/flake-parts/archive/205b12d8b7cd4802fbcb8e8ef6a0f1408781a4f9.tar.gz",
+      "hash": "sha256-4pDvzqnegAfRkPwO3wmwBhVi/Sye1mzps0zHWYnP88c="
+    },
+    "git-hooks-nix": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "cachix",
+        "repo": "git-hooks.nix"
+      },
+      "branch": "master",
+      "submodules": false,
+      "revision": "aa9f40c906904ebd83da78e7f328cd8aeaeae785",
+      "url": "https://github.com/cachix/git-hooks.nix/archive/aa9f40c906904ebd83da78e7f328cd8aeaeae785.tar.gz",
+      "hash": "sha256-NdaCraHPp8iYMWzdXAt5Nv6sA3MUzlCiGiR586TCwo0="
+    },
+    "nixpkgs": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "NixOS",
+        "repo": "nixpkgs"
+      },
+      "branch": "nixos-26.05",
+      "submodules": false,
+      "revision": "2efa67fd26b6df417c33e4603185c701f260dd83",
+      "url": "https://github.com/NixOS/nixpkgs/archive/2efa67fd26b6df417c33e4603185c701f260dd83.tar.gz",
+      "hash": "sha256-v72qr4LsSz61tQki/41nHKZKPY6NSeZavtGlAInOCng="
+    },
+    "patchelf": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "NixOS",
+        "repo": "patchelf"
+      },
+      "branch": "master",
+      "submodules": false,
+      "revision": "3e996dbef1fa0658012f8dd290bddcf0302acade",
+      "url": "https://github.com/NixOS/patchelf/archive/3e996dbef1fa0658012f8dd290bddcf0302acade.tar.gz",
+      "hash": "sha256-+c7LIYKu0pYnG7h1dsEIDs6l4+91Vh/oDrSDARdBK3o="
+    },
+    "with-inputs": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "denful",
+        "repo": "with-inputs"
+      },
+      "branch": "main",
+      "submodules": false,
+      "revision": "641d01ef95eae1aeaa257ffd48102ab9a308f2a2",
+      "url": "https://github.com/denful/with-inputs/archive/641d01ef95eae1aeaa257ffd48102ab9a308f2a2.tar.gz",
+      "hash": "sha256-y98sqtCGDKnD90PMK5qV3ux94sg/Fc/8Ka9+T8YeieE="
+    }
+  },
+  "version": 7
+}

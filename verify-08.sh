@@ -26,6 +26,7 @@ if [[ ${1:-} == --syntax-only && $# == 1 ]]; then
   done
   bash -n "$0"
   ./verify-unflake.sh 08 --syntax-only
+  ./verify-with-inputs.sh 08 --syntax-only
   printf '%s\n' 'Example 08 Nix and Bash syntax checks passed.'
   exit 0
 fi
@@ -244,4 +245,5 @@ done
 printf '%s\n' 'Example 08 passed: 14 native/library implementations; IFD enabled only for staged flake-compat.'
 
 ./verify-unflake.sh 08 "$@"
-printf '%s\n' 'Example 08 passed: all 20 implementations; IFD enabled only for staged flake-compat.'
+./verify-with-inputs.sh 08 "$@"
+printf '%s\n' 'Example 08 passed: all 26 implementations; IFD enabled only for staged flake-compat.'
