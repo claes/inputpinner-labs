@@ -15,6 +15,10 @@ unflake’s npins backend. This small bridge is lab-maintained, not an upstream
 niv backend. Initialization replaces exactly one generated import, checking
 that it appears once, and leaves unflake’s evaluation logic intact.
 
+These tarball-backed sources expose the path and active revision to unflake,
+following its npins backend. They do not supply all `fetchTree` metadata such
+as `narHash` or `lastModified`; these outputs do not require it.
+
 Build using the included locks and generated files. No maintenance CLI or
 initialization is needed, and evaluation needs no import-from-derivation:
 
