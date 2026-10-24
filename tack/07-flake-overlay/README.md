@@ -1,43 +1,35 @@
-# 07: Apply a flake overlay with tack
+# 07 — Apply an upstream flake overlay with tack (native)
 
-Apply the pinned [patchelf
-overlay](https://github.com/NixOS/patchelf/blob/3e996dbef1fa0658012f8dd290bddcf0302acade/flake.nix)
-to the consumer’s nixpkgs and build its added package:
+Obtain upstream’s `overlays.default` and apply it when importing the
+parent nixpkgs. The overlay adds `pkgs.patchelf-new`; its recipe builds
+with the parent’s compiler, libraries and helpers.
+
+Tack’s native flake pin exposes the upstream outputs. No adapter library is
+needed.
+
+Build directly with the included pins; no initializer or pinner CLI is needed:
 
 ```sh
 nix-build
 ./result/bin/patchelf --version
 ```
 
-Expect `patchelf 0.19.2`. `patchelf-new` is the Nix attribute name; the
-executable remains `bin/patchelf`. Unlike 06, this builds the overlay recipe
-with the parent package set instead of wrapping upstream’s prebuilt package
-output.
+Expect `patchelf 0.19.2`. The attribute is named `patchelf-new`,
+but its executable remains `bin/patchelf`. The original parent `patchelf`
+is unchanged.
 
-The native flake pin exposes `sources.patchelf.overlays.default`. The consumer
-passes that function to its parent nixpkgs import and builds the resulting
-`pkgs.patchelf-new`.
+The other six pinners have paired flake-compat and flake-inputs variants.
+Adding either library here would duplicate the native resolver’s role.
+See the [comparison table](../../README.md) for both alternatives.
 
-No `all_follow` or per-input sharing rule is needed. The overlay receives the
-parent package set directly; the upstream flake is still evaluated using its
-original lock.
+All examples retain the same nixpkgs and patchelf snapshots. Keep native
+declarations, locks, resolvers, revision seeds and versions in Git. To regenerate
+the initial pins in another disposable copy, remove `.tack/`, then run:
 
-Alternative considered: Using a source-only patchelf pin plus flake-compat would
-also expose the overlay, but tack’s native flake interface already provides it
-without the extra adapter.
+```sh
+nix shell github:NixOS/nixpkgs/2efa67fd26b6df417c33e4603185c701f260dd83#tack --command ./init.sh
+```
 
-Source pins, generated resolvers, seed files, and version records are copied
-unchanged from [06-flake-package](../06-flake-package). No initialization or
-pinner CLI is needed to build. For regeneration, follow 06’s maintenance setup
-and use this directory’s `init.sh` in a disposable copy without its generated
-files.
-
-The upstream lock supplies helper functions for overlay evaluation. The selected
-recipe uses the parent toolchain, while upstream’s package outputs keep their
-own package set. The overlay adds `patchelf-new` alongside the parent’s existing
-`patchelf`, without an input-sharing rule or lock rewrite.
-
-`../../verify-07.sh` checks pins, upstream locks, matching overlay builds,
-parent build dependencies, version output, and unchanged files in fresh copies
-with spaces in their paths. It also compares with 06’s upstream package and
-confirms that plain parent nixpkgs has no `patchelf-new` attribute.
+`../../verify-07.sh` checks all 14 native/library implementations in
+fresh copies with spaces in their paths. Use `--syntax-only` for syntax checks.
+See the [lab notes](../../README.md) for maintenance and Git configuration.

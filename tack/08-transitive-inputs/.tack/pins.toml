@@ -11,7 +11,6 @@
 # all_follow maps input names to the top-level pin they follow
 # opt out per-input with exclude_follow
 [all_follow]
-# Apply the same target at every depth, including upstream's alias names.
 nixpkgs = ["nixpkgs-lib", "nixpkgs-stable"]
 # nixpkgs = "nixpkgs"
 # nixpkgs = ["nixpkgs-stable", "nixpkgs-unstable"]
@@ -19,7 +18,7 @@ nixpkgs = ["nixpkgs-lib", "nixpkgs-stable"]
 # inputs.<name> fields
 #   url             required, shorturl ok, ?rev=<sha> pins an exact commit
 #   type            flake (default), fetch, or fixed
-#   flake           legacy false means type = "flake"
+#   flake           legacy false means type = "fetch"
 #   follows         { child = "pin" } override map
 #   exclude_follow  all_follow names to skip
 #   dir             subdir holding flake.nix
@@ -29,7 +28,6 @@ nixpkgs = ["nixpkgs-lib", "nixpkgs-stable"]
 
 [inputs.nixpkgs]
 url = "github:NixOS/nixpkgs/2efa67fd26b6df417c33e4603185c701f260dd83"
-type = "flake"
 
 [inputs.patchelf]
 url = "github:NixOS/patchelf/3e996dbef1fa0658012f8dd290bddcf0302acade"

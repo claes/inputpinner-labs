@@ -1,45 +1,33 @@
-# 06: Consume a flake package with tack
+# 06 — Consume an upstream flake package with tack (native)
 
-Build our `patchelf-demo` program using [NixOS/patchelf’s flake
-output](https://github.com/NixOS/patchelf/blob/3e996dbef1fa0658012f8dd290bddcf0302acade/flake.nix),
-then run it:
+Build `patchelf-demo`, a wrapper around upstream’s
+`packages.<system>.default`. The parent nixpkgs creates the wrapper;
+patchelf keeps the nixpkgs selected by its own upstream lock.
+
+Tack’s native flake pin exposes the upstream outputs. No adapter library is
+needed.
+
+Build directly with the included pins; no initializer or pinner CLI is needed:
 
 ```sh
 nix-build
 ./result/bin/patchelf-demo --version
 ```
 
-The expected output is `patchelf 0.19.2`. The wrapper forwards arguments to the
-upstream executable; interpolation records that package as a runtime dependency.
+Expect `patchelf 0.19.2`.
 
-tack declares the parent nixpkgs as a source pin and patchelf as a flake pin.
-Its native resolver exposes `sources.patchelf.packages.${system}.default` to our
-wrapper.
+The other six pinners have paired flake-compat and flake-inputs variants.
+Adding either library here would duplicate the native resolver’s role.
+See the [comparison table](../../README.md) for both alternatives.
 
-The generated resolver evaluates patchelf using its upstream `flake.lock`. No
-input-sharing rules are configured, so the parent and upstream package sets
-remain separate.
-
-Alternative considered: Pinning patchelf with `--fetch` and adding flake-compat
-would also work. Native flake consumption already covers this case, so that
-extra dependency is omitted.
-
-All locks and generated resolvers are included; builds need no initializer or
-pinner CLI. `revision` and `patchelf-revision` seed initialization. The
-source-only variants also pin
-[flake-compat](https://github.com/NixOS/flake-compat/tree/5edf11c44bc78a0d334f6334cdaf7d60d732daab)
-with `flake-compat-revision`. Updating these parent pins does not independently
-refresh patchelf’s child lock. This example preserves that lock; sharing the
-parent package set belongs to example 08.
-
-To reproduce initialization, use a disposable copy without `.tack/`:
+All examples retain the same nixpkgs and patchelf snapshots. Keep native
+declarations, locks, resolvers, revision seeds and versions in Git. To regenerate
+the initial pins in another disposable copy, remove `.tack/`, then run:
 
 ```sh
 nix shell github:NixOS/nixpkgs/2efa67fd26b6df417c33e4603185c701f260dd83#tack --command ./init.sh
 ```
 
-`versions.txt` records maintenance tools. Manual initialization also needs jq.
-The upstream output supports `x86_64-linux`, `i686-linux`, and `aarch64-linux`;
-the lab verifies `x86_64-linux`. `../../verify-06.sh` compares source hashes,
-upstream locks, package dependencies, wrapper derivations, and version output
-across approaches, including fresh copies in paths with spaces.
+`../../verify-06.sh` checks all 14 native/library implementations in
+fresh copies with spaces in their paths. Use `--syntax-only` for syntax checks.
+See the [lab notes](../../README.md) for maintenance and Git configuration.

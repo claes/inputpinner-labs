@@ -307,201 +307,190 @@ Checkout preparation refused to overwrite local work, and cleanup preserved
 checkout files and links, including a file named `keep.tmp`. ShellCheck and
 Nix/Bash syntax checks passed. Examples 01–04 are unchanged.
 
-## Example 06: Use an upstream flake package
+## Example 06: Use an upstream flake package with either library
 
-Each project builds `patchelf-demo`, a small shell wrapper whose executable comes
-from `NixOS/patchelf`’s `packages.<system>.default`. The consumer’s nixpkgs creates
-the wrapper; the upstream package keeps its own dependency graph.
+Build `patchelf-demo`, a wrapper around upstream’s `packages.<system>.default`.
+The parent nixpkgs creates the wrapper; patchelf keeps its own locked nixpkgs
+(`c69a9bffbecde46b4b939465422ddc59493d3e4d`). Both library variants preserve
+that separation and produce the same wrapper and upstream package.
 
-The shared upstream snapshot is
-[`3e996dbef1fa0658012f8dd290bddcf0302acade`](https://github.com/NixOS/patchelf/tree/3e996dbef1fa0658012f8dd290bddcf0302acade).
-The source-only variants separately pin
-[flake-compat at `5edf11c44bc78a0d334f6334cdaf7d60d732daab`](https://github.com/NixOS/flake-compat/tree/5edf11c44bc78a0d334f6334cdaf7d60d732daab)
-to evaluate outputs from the pinner-resolved source. The parent nixpkgs remains
-at the same snapshot as earlier examples. Patchelf’s own lock selects nixpkgs
-`c69a9bffbecde46b4b939465422ddc59493d3e4d`; it is deliberately retained.
+The six source-only pinners now have paired directories explicitly named
+`-flake-compat` and `-flake-inputs`. Flakes and tack retain one native reference.
+Both adapters are pinned: [flake-compat](https://github.com/NixOS/flake-compat/tree/5edf11c44bc78a0d334f6334cdaf7d60d732daab)
+and [flake-inputs](https://github.com/fricklerhandwerk/flake-inputs/tree/5c1279c5b5dc81dfd245fc4d072446fc56f341c7).
+The parent nixpkgs remains `2efa67fd26b6df417c33e4603185c701f260dd83`; patchelf
+remains `3e996dbef1fa0658012f8dd290bddcf0302acade`. New variants include native
+locks, resolvers and version records, so normal consumption needs no initializer
+or maintenance CLI. Existing artifacts move with renamed flake-compat directories;
+the pre-existing Nixtamal 07 `result` symlink was preserved there.
 
-| Approach | Example | Flake output evaluation |
-| --- | --- | --- |
-| flake | [06-flake-package](flake/06-flake-package) | Native flake input |
-| niv | [06-flake-package](niv/06-flake-package) | Pinned flake-compat adapter |
-| npins | [06-flake-package](npins/06-flake-package) | Pinned flake-compat adapter |
-| lon | [06-flake-package](lon/06-flake-package) | Pinned flake-compat adapter |
-| nixtamal | [06-flake-package](nixtamal/06-flake-package) | Pinned flake-compat adapter |
-| tack | [06-flake-package](tack/06-flake-package) | Native flake pin |
-| mana | [06-flake-package](mana/06-flake-package) | Pinned flake-compat adapter |
-| manual | [06-flake-package](manual/06-flake-package) | Pinned flake-compat adapter |
+| Approach | Variant(s) |
+| --- | --- |
+| flake | [native](flake/06-flake-package) |
+| niv | [flake-compat](niv/06-flake-package-flake-compat), [flake-inputs](niv/06-flake-package-flake-inputs) |
+| npins | [flake-compat](npins/06-flake-package-flake-compat), [flake-inputs](npins/06-flake-package-flake-inputs) |
+| lon | [flake-compat](lon/06-flake-package-flake-compat), [flake-inputs](lon/06-flake-package-flake-inputs) |
+| nixtamal | [flake-compat](nixtamal/06-flake-package-flake-compat), [flake-inputs](nixtamal/06-flake-package-flake-inputs) |
+| tack | [native](tack/06-flake-package) |
+| mana | [flake-compat](mana/06-flake-package-flake-compat), [flake-inputs](mana/06-flake-package-flake-inputs) |
+| manual | [flake-compat](manual/06-flake-package-flake-compat), [flake-inputs](manual/06-flake-package-flake-inputs) |
 
-Build with `nix build path:.` for flakes, `nix-build -A patchelf-demo` for Mana,
-and `nix-build` for the others. Run `./result/bin/patchelf-demo --version` for
-`patchelf 0.19.2`. No initialization or maintenance tool is required to build.
-The README and commented expression in each directory explain the approach,
-important boundaries, alternatives, and reproducible initialization commands.
-
-The wrapper demonstrates an upstream flake output used as an input to our own
-derivation, rather than importing the repository as a package set or selecting
-patchelf from the parent nixpkgs. Flakes and tack handle the upstream flake
-natively. The other examples fetch sources and explicitly evaluate the flake
-with the adapter. No `follows` rule or upstream lock rewrite is introduced.
-The package, overlay, and dependency-sharing cases remain separate examples.
-
-Upstream supports `x86_64-linux`, `i686-linux`, and `aarch64-linux`; the flake
-wrapper exports those same systems. The verifier targets `x86_64-linux`.
-`./verify-06.sh` checks shared source revisions and hashes, retained upstream
-locks, matching package and wrapper derivations, executable dependencies,
-argument forwarding, version output, and unchanged files during builds.
-`./verify-06.sh --syntax-only` checks Nix and Bash syntax. The full verifier
-uses disposable fresh copies in paths with spaces, needs Nix, jq and GNU
-utilities, and requires no pinner CLIs. As in earlier examples, Nix needs its
-experimental `nix-command` and `flakes` features enabled.
-
-Validated on `x86_64-linux` with Nix 2.34.8. All eight fresh copies built the
-same wrapper derivation and referenced the exact package obtained by directly
-building the pinned upstream flake output. Every wrapper reported
-`patchelf 0.19.2` and forwarded `--print-interpreter` correctly. Source hashes,
-compatibility adapter revisions, and upstream locks matched; the parent and
-upstream nixpkgs pins stayed separate. Builds left example files unchanged.
-Tests used paths containing spaces and required no initialization or pinner CLIs.
-ShellCheck and Nix/Bash syntax checks passed. Examples 01–05 are unchanged.
-
-## Example 07: Apply an upstream flake overlay
-
-Use the same [patchelf snapshot](https://github.com/NixOS/patchelf/blob/3e996dbef1fa0658012f8dd290bddcf0302acade/flake.nix)
-as 06, now selecting `overlays.default` and applying it when importing the
-parent nixpkgs. Build the new `pkgs.patchelf-new` attribute and run its
-`bin/patchelf --version` for `patchelf 0.19.2`.
-
-The overlay calls its recipe with the receiving package set, so this package
-uses the parent toolchain and build helpers. Its `final` argument is the resulting
-package set, which the recipe uses for `callPackage`. Example 06 selected the
-already constructed upstream package output and wrapped it. The source revision
-and upstream lock are identical in these two examples; their package derivations
-can still differ because the package sets differ.
-
-| Approach | Example | Obtaining the overlay |
-| --- | --- | --- |
-| flake | [07-flake-overlay](flake/07-flake-overlay) | Native flake input |
-| niv | [07-flake-overlay](niv/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
-| npins | [07-flake-overlay](npins/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
-| lon | [07-flake-overlay](lon/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
-| nixtamal | [07-flake-overlay](nixtamal/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
-| tack | [07-flake-overlay](tack/07-flake-overlay) | Native flake pin |
-| mana | [07-flake-overlay](mana/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
-| manual | [07-flake-overlay](manual/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
-
-For flakes, run `nix build path:.#patchelf-new` (or `nix build path:.`). For Mana,
-run `nix-build -A patchelf-new`; for the others, run `nix-build`. All produce
-`result/bin/patchelf`. The attribute’s name does not rename the executable.
-The expressions comment the two steps: obtaining the upstream overlay and
-passing it through `overlays = [ ... ];` to the parent import. Each README
-explains its approach, the relevant boundary, and alternatives considered.
-
-All locks, generated resolvers, seed revisions, and tool-version records are
-copied unchanged from 06. Builds require no initialization or maintenance CLIs.
-The included initializers reproduce those pins using the same tool setup as 06.
-The default overlay adds attributes alongside the original parent `patchelf`;
-no input-sharing rule or upstream lock modification is involved. Upstream’s
-locked nixpkgs still supplies helper functions used in overlay evaluation.
-This example changes the selected package’s build environment, and leaves
-upstream input-graph sharing for 08. See the
-[Nixpkgs overlay documentation](https://nixos.org/manual/nixpkgs/stable/#chap-overlays)
-for the receiving package-set interface.
-
-`./verify-07.sh` uses disposable fresh copies with spaces in their paths. It
-checks source pins, upstream locks, matching derivations, successful builds and
-version output, the parent standard environment in build inputs, and unchanged
-files during builds. It compares the result with 06’s upstream package and the
-parent’s existing patchelf, and checks that the overlay adds the new attribute.
-`./verify-07.sh --syntax-only` checks Nix and Bash syntax. The full verifier
-targets `x86_64-linux` and needs Nix, jq, GNU tar and standard GNU utilities;
-it requires no pinner CLIs.
-
-Validated on `x86_64-linux` with Nix 2.34.8. All eight fresh copies produced
-the same overlay package derivation and reported `patchelf 0.19.2`. Build-input
-inspection confirmed the parent standard environment, and the executable’s
-interpreter matched the parent dynamic linker. The result differs from 06’s
-upstream package and from the original parent `patchelf` (0.15.2), which remains
-unchanged. Patchelf’s build-time test suite passed: 68 passed, 4 skipped, no
-failures. Locks, source hashes, and compatibility pins match 06; builds left
-example files unchanged. Tests used paths containing spaces without initialization
-or pinner CLIs. ShellCheck and Nix/Bash syntax checks passed. Examples 01–06
-are unchanged, and the new directories contain no build artifacts.
-
-## Example 08: Share the parent pin through an upstream flake
-
-Keep 06’s `patchelf-demo` wrapper and the same upstream snapshot, but make
-`patchelf.packages.<system>.default` use the parent nixpkgs. In 06 the upstream
-package used its own lock; in 07 an overlay rebuilt its recipe in the parent
-package set; here the upstream flake itself receives the parent input.
-
-| Approach | Example | Sharing mechanism |
-| --- | --- | --- |
-| flake | [08-transitive-inputs](flake/08-transitive-inputs) | Native `inputs.patchelf.inputs.nixpkgs.follows` |
-| tack | [08-transitive-inputs](tack/08-transitive-inputs) | Native `all_follow` with upstream aliases |
-| niv | [08-transitive-inputs](niv/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
-| npins | [08-transitive-inputs](npins/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
-| lon | [08-transitive-inputs](lon/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
-| nixtamal | [08-transitive-inputs](nixtamal/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
-| mana | [08-transitive-inputs](mana/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
-| manual | [08-transitive-inputs](manual/08-transitive-inputs) | Derived upstream lock plus the existing flake-compat adapter |
+flake-compat returns `.outputs` from its imported adapter; flake-inputs uses
+`.import-flake { src = sources.patchelf; }`. Neither variant overrides an input
+or rewrites a lock, and both work with IFD disabled. Comments show source
+resolution, adapter evaluation, package selection and the wrapper’s runtime
+reference to that package.
 
 Build with `nix build path:.` for flakes, `nix-build -A patchelf-demo` for Mana,
-and `nix-build` for the others. Run `./result/bin/patchelf-demo --version` for
-`patchelf 0.19.2`. The wrapper consumes the upstream package output and forwards
-its arguments, just as in 06.
+and `nix-build` otherwise. Run `./result/bin/patchelf-demo --version` for
+`patchelf 0.19.2`. The wrapper forwards arguments to the upstream executable.
 
-Native flakes reuse the parent node through a follows edge. Tack’s parent pin
-must expose flake outputs, and its global sharing rule includes `nixpkgs-lib`
-and `nixpkgs-stable`, matching the upstream aliases at every depth. This is a
-name-based rule and should be reviewed when adding other inputs. See the
-[Nix flake input documentation](https://github.com/NixOS/nix/blob/master/src/nix/flake.md)
-and [tack’s sharing documentation](https://github.com/manic-systems/tack#follows).
+`./verify-06.sh` checks all 14 implementations against the directly evaluated
+upstream flake: source pins and hashes, unchanged upstream locks, package and
+wrapper derivations, executable dependencies, argument forwarding and unchanged
+project files during builds. `--syntax-only` checks Nix and Bash syntax.
 
-The source-only examples keep their original pin records. Their pinned
-flake-compat interface accepts no input or lock override. A short, commented
-`share-nixpkgs.nix` helper reads the original upstream lock, replaces its existing
-nixpkgs node, and builds a store copy with that adapted lock. The replacement
-uses the manager’s active revision and the hash of its resolved tree, expressed
-as a GitHub lock record. It may fetch that canonical source again; this creates
-no independent version selection. Existing incoming follows edges reach the new
-node, including flake-parts and git-hooks aliases. Other lock fields are retained.
+Validated on `x86_64-linux` with Nix 2.34.8: all 14 implementations produced
+the same wrapper and referenced the original upstream package. Both libraries
+retained upstream’s independent nixpkgs, and IFD was disabled throughout.
+The flake-inputs initializers regenerated matching pins and built successfully
+for all six source-only pinners in disposable copies.
 
-Importing the store copy requires import-from-derivation, so these six examples
-need `allow-import-from-derivation = true`; flakes and tack avoid that staging
-build. The helper is deliberately specific to this fixture’s GitHub nixpkgs pin
-and version-7 upstream lock. It is consumer code rather than a native capability
-of those managers. Applying an overlay or replacing only one direct outputs
-argument would skip this graph transformation. Each README explains its approach,
-limitations, and alternatives actually considered.
+## Example 07: Apply an upstream flake overlay with either library
 
-All source snapshots, seed revisions, and maintenance versions are reused from
-06. The native flake parent lock records its new follows edge, tack’s manifest
-records its sharing policy, and the other manager locks stay unchanged. Original
-upstream sources remain immutable. No initializer or pinner CLI is needed to
-build; per-example initializers use the same maintenance tool setup as 06.
+Obtain `overlays.default` through either adapter and pass it to the parent
+nixpkgs import. Build `pkgs.patchelf-new`, whose recipe now uses the parent’s
+compiler, libraries and build helpers. The overlay adds an attribute alongside
+the parent’s original patchelf. Upstream’s own lock remains unchanged; this is
+recipe composition rather than input-graph sharing.
 
-`./verify-08.sh` consumes shipped pins in disposable fresh copies with spaces
-in their paths. It inspects the effective parent revision and hash at the direct
-nixpkgs edge, flake-parts’ `nixpkgs-lib`, and git-hooks’ two nixpkgs aliases.
-It checks derived trees against original sources, parent build dependencies,
-matching package and wrapper derivations, version output, and unchanged project
-files during builds. A separate case changes the active parent pin while keeping
-its initialization seed unchanged, checking update propagation.
-`./verify-08.sh --syntax-only` checks Nix and Bash syntax.
-The verifier targets `x86_64-linux`, needs Nix, jq and GNU utilities, and requires
-no pinner CLIs.
+| Approach | Variant(s) |
+| --- | --- |
+| flake | [native](flake/07-flake-overlay) |
+| niv | [flake-compat](niv/07-flake-overlay-flake-compat), [flake-inputs](niv/07-flake-overlay-flake-inputs) |
+| npins | [flake-compat](npins/07-flake-overlay-flake-compat), [flake-inputs](npins/07-flake-overlay-flake-inputs) |
+| lon | [flake-compat](lon/07-flake-overlay-flake-compat), [flake-inputs](lon/07-flake-overlay-flake-inputs) |
+| nixtamal | [flake-compat](nixtamal/07-flake-overlay-flake-compat), [flake-inputs](nixtamal/07-flake-overlay-flake-inputs) |
+| tack | [native](tack/07-flake-overlay) |
+| mana | [flake-compat](mana/07-flake-overlay-flake-compat), [flake-inputs](mana/07-flake-overlay-flake-inputs) |
+| manual | [flake-compat](manual/07-flake-overlay-flake-compat), [flake-inputs](manual/07-flake-overlay-flake-inputs) |
 
-Validated on `x86_64-linux` with Nix 2.34.8. All eight fresh copies resolved
-the parent revision and source hash at all four inspected input paths and
-produced matching package and wrapper derivations. Every wrapper reported
-`patchelf 0.19.2` and used a package built with the parent standard environment
-and dynamic linker. Original source trees and project files stayed unchanged;
-adapted copies differed only in the replacement lock node. Changing the manual
-parent pin in a disposable copy propagated to upstream’s package while leaving
-the initialization seed unchanged. Tests used paths containing spaces and
-required no pinner CLIs or initialization. ShellCheck and Nix/Bash syntax checks
-passed. Examples 01–07 are unchanged; no build artifacts remain in the new
-project directories.
+The source pins and adapter revisions match the corresponding 06 variant.
+Both adapters evaluate the overlay without IFD. Every README links its matching
+library counterpart and explains the selected interface and alternatives.
+
+Build with `nix build path:.#patchelf-new` for flakes,
+`nix-build -A patchelf-new` for Mana, and `nix-build` otherwise. Run
+`./result/bin/patchelf --version` for `patchelf 0.19.2`; the attribute name does
+not rename the executable.
+
+`./verify-07.sh` checks all 14 implementations for identical overlay packages,
+parent build dependencies and dynamic linker, retained source pins and upstream
+locks, the added attribute, preservation of the original package and unchanged
+files during builds. It distinguishes the result from 06’s upstream package.
+`--syntax-only` checks Nix and Bash syntax.
+
+Validated on `x86_64-linux` with Nix 2.34.8: all 14 implementations produced
+the same overlay package with the parent standard environment and dynamic linker.
+The original parent package and upstream locks stayed unchanged. Both library
+variants worked with IFD disabled.
+
+## Example 08: Hello and upstream patchelf share nixpkgs
+
+This merges the former 08 and 10 sharing exercises. Pin nixpkgs once, obtain
+Hello from it, and make patchelf’s flake use the same chosen source. Every
+implementation exposes `hello` and `patchelf` directly, without a wrapper.
+
+| Approach | Variant(s) |
+| --- | --- |
+| flake | [native](flake/08-transitive-inputs) |
+| niv | [flake-compat](niv/08-transitive-inputs-flake-compat), [flake-inputs](niv/08-transitive-inputs-flake-inputs) |
+| npins | [flake-compat](npins/08-transitive-inputs-flake-compat), [flake-inputs](npins/08-transitive-inputs-flake-inputs) |
+| lon | [flake-compat](lon/08-transitive-inputs-flake-compat), [flake-inputs](lon/08-transitive-inputs-flake-inputs) |
+| nixtamal | [flake-compat](nixtamal/08-transitive-inputs-flake-compat), [flake-inputs](nixtamal/08-transitive-inputs-flake-inputs) |
+| tack | [native](tack/08-transitive-inputs) |
+| mana | [flake-compat](mana/08-transitive-inputs-flake-compat), [flake-inputs](mana/08-transitive-inputs-flake-inputs) |
+| manual | [flake-compat](manual/08-transitive-inputs-flake-compat), [flake-inputs](manual/08-transitive-inputs-flake-inputs) |
+
+Native flakes use `patchelf.inputs.nixpkgs.follows = "nixpkgs"`. Tack uses
+`all_follow`, including upstream’s `nixpkgs-lib` and `nixpkgs-stable` aliases.
+Its name-based rule applies at every depth and should be reviewed when adding
+other inputs.
+
+The flake-inputs variants express the relationship directly:
+
+```nix
+pkgs = import sources.nixpkgs { inherit system; config = {}; overlays = []; };
+upstream = (import sources.flake-inputs).import-flake {
+  src = sources.patchelf;
+  overrides.nixpkgs = sources.nixpkgs;
+};
+# Expose pkgs.hello and upstream.packages.${system}.default.
+```
+
+Existing upstream follows chains reach that same source. This needs no lock
+rewrite, staging build or IFD. The adapter’s path overrides omit some metadata:
+reading the overridden `narHash` is unsupported, so hash its resolved path.
+
+The pinned flake-compat has no override parameter. Its variants retain the
+commented `share-nixpkgs.nix` helper, staging upstream with its existing nixpkgs
+lock node replaced using the active parent revision and resolved source hash.
+Other lock fields and original source trees stay unchanged. Importing that
+staged tree needs `allow-import-from-derivation = true`. The helper is specific
+to this fixture’s GitHub pin and version-7 lock. It may fetch the same source
+under a different native basename; this introduces no independent version choice.
+This extra machinery is the main difference between the two equivalent variants.
+
+For flakes, build both packages with:
+
+```sh
+nix build path:.#hello --out-link result-hello
+nix build path:.#patchelf --out-link result-patchelf
+```
+
+For every other pinner, including Mana:
+
+```sh
+nix-build -A hello -o result-hello
+nix-build -A patchelf -o result-patchelf
+```
+
+Run `./result-hello/bin/hello` and `./result-patchelf/bin/patchelf --version`
+for `Hello, world!` and `patchelf 0.19.2`. In a disposable copy, `./update.sh`
+selects the fixed older nixpkgs in `alternate-revision`. Rebuild and compare
+`readlink result-hello result-patchelf`: both paths change while patchelf’s
+source and version stay fixed. The initialization seed `revision` stays unchanged.
+README commands bootstrap each maintenance CLI. Mana maintenance needs a path
+without spaces; its saved locks build correctly in spaced paths.
+
+`./verify-08.sh` checks all 14 implementations, including both packages’ actual
+build dependencies and four effective upstream nixpkgs references. It compares
+source hashes when native fetch names differ, checks direct path reuse for
+flake-inputs, and checks that staged trees differ only in the intended lock node.
+Native and flake-inputs cases run with IFD disabled; only the flake-compat cases
+enable it. `--updates` exercises changes to the parent pin across all 14 cases,
+requiring other pins and original upstream locks to stay unchanged.
+`--syntax-only` checks Nix and Bash syntax.
+
+All three verifiers use disposable fresh copies in paths containing spaces,
+target `x86_64-linux` and need Nix, jq and GNU utilities. Normal verification
+needs no maintenance CLIs. For the optional 08 update checks:
+
+```sh
+nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/2efa67fd26b6df417c33e4603185c701f260dd83.tar.gz \
+  -p niv npins lon nixtamal.bin tack --run './verify-08.sh --updates'
+```
+
+Validated on `x86_64-linux` with Nix 2.34.8: all 14 sharing implementations
+passed with both parent pins, producing matching Hello and patchelf derivations
+at each pin. Only the parent pin changed; upstream and adapter records stayed
+fixed. All four effective input edges matched the parent source contents, and
+both packages used its standard environment. Staged compatibility trees differed
+only in the intended lock node. Native and flake-inputs cases passed with IFD
+disabled; IFD was enabled only for the staged flake-compat cases. Builds left
+project files and upstream sources unchanged. Syntax checks and ShellCheck
+passed for all three paired exercises. Examples 01–05 and 09, existing
+`.gitignore` edits and the moved Nixtamal result link were preserved.
 
 ## Example 09: Patch a pinned dependency and repair after an update
 

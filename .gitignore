@@ -6,3 +6,6 @@
 /*/[0-9][0-9]-*/next_lock.json
 
 # Keep declarations, locks, resolvers, and recorded tool versions in Git.
+
+# Example 05 development checkouts contain local edits and Git metadata.
+/*/05-local-overrides/local-systems/

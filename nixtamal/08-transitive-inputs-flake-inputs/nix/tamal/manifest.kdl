@@ -1,0 +1,30 @@
+version "1.1.0"
+inputs {
+    nixpkgs {
+        archive fetch-time=eval {
+            url "https://github.com/NixOS/nixpkgs/archive/{{fresh_value}}.tar.gz"
+        }
+        hash algorithm=SHA-256
+        fresh-cmd {
+            $ echo "2efa67fd26b6df417c33e4603185c701f260dd83"
+        }
+    }
+    patchelf {
+        archive fetch-time=eval {
+            url "https://github.com/NixOS/patchelf/archive/{{fresh_value}}.tar.gz"
+        }
+        hash algorithm=SHA-256
+        fresh-cmd {
+            $ echo "3e996dbef1fa0658012f8dd290bddcf0302acade"
+        }
+    }
+    flake-inputs {
+        archive fetch-time=eval {
+            url "https://github.com/fricklerhandwerk/flake-inputs/archive/{{fresh_value}}.tar.gz"
+        }
+        hash algorithm=SHA-256
+        fresh-cmd {
+            $ echo "5c1279c5b5dc81dfd245fc4d072446fc56f341c7"
+        }
+    }
+}

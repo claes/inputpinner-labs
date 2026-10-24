@@ -1,37 +1,52 @@
-# 08: Share transitive inputs with tack
+# 08 — Hello and patchelf share nixpkgs with tack (native)
 
-Keep the patchelf snapshot from 06–07 and make its package output use the parent
-nixpkgs pin:
+Pin nixpkgs once. Use it for our own Hello and pass it to patchelf’s flake,
+so its package output builds with the same chosen package set. This combines
+the previous sharing exercises 08 and 10 into one comparison.
+
+The `[all_follow]` rule shares the parent nixpkgs flake, including `nixpkgs-lib`
+and `nixpkgs-stable` aliases. It is a name-based rule applied at every depth;
+review it when adding inputs. No adapter library is needed.
+
+Build directly with the included pins; no initializer or pinner CLI is needed:
 
 ```sh
-nix-build
-./result/bin/patchelf-demo --version
+nix-build -A hello -o result-hello
+nix-build -A patchelf -o result-patchelf
+./result-hello/bin/hello
+./result-patchelf/bin/patchelf --version
+readlink result-hello result-patchelf
 ```
 
-Expect `patchelf 0.19.2`. This retains 06’s wrapper and package-output
-interface. The new step shares the upstream input graph, rather than applying
-07’s overlay.
+Expect `Hello, world!` and `patchelf 0.19.2`.
 
-The parent nixpkgs is now a flake pin so it supplies `lib` and `legacyPackages`.
-An `all_follow` rule shares it at every depth, including inputs named
-`nixpkgs-lib` and `nixpkgs-stable`.
+In a disposable copy, change only the parent pin and rebuild:
 
-A per-pin direct-input override would leave the resolver’s transitive aliases on
-their original nodes. This fixture’s explicit alias list covers the upstream
-graph. The global rule also applies to other matching input names if more pins
-are added.
+```sh
+nix shell github:NixOS/nixpkgs/2efa67fd26b6df417c33e4603185c701f260dd83#tack --command ./update.sh
+nix-build -A hello -o result-hello
+nix-build -A patchelf -o result-patchelf
+readlink result-hello result-patchelf
+```
 
-Alternative considered: A source-only parent pin lacks the outputs required by
-the upstream flake. A source-only patchelf pin plus the staged compatibility
-adapter would work, but native sharing avoids that extra evaluation build.
+`alternate-revision` selects the fixed older nixpkgs already recorded in
+upstream’s lock. Both output paths change; patchelf’s source and version
+stay fixed while its build environment changes. The seed file `revision`
+stays unchanged, proving consumption follows the active pin.
 
-Source pins, seed revisions, and tool versions reuse 06. Original upstream
-sources remain immutable. Flakes regenerate their parent lock with the follows
-edge; tack changes its sharing declarations; the source-only managers retain
-their existing locks and resolvers. Builds need no initialization or pinner CLI.
-For regeneration, use this directory’s `init.sh` with 06’s maintenance setup in
-a disposable copy without its generated files.  `../../verify-08.sh` checks
-source hashes, effective direct and transitive inputs, parent build
-dependencies, matching packages and wrappers, and unchanged files in fresh
-copies with spaces in their paths. The READMEs and root comparison describe the
-different costs of native and adapted graph sharing.
+The other six pinners have paired flake-compat and flake-inputs variants.
+Adding either library here would duplicate the native resolver’s role.
+See the [comparison table](../../README.md) for both alternatives.
+
+All examples retain the same nixpkgs and patchelf snapshots. Keep native
+declarations, locks, resolvers, revision seeds and versions in Git. To regenerate
+the initial pins in another disposable copy, remove `.tack/`, then run:
+
+```sh
+nix shell github:NixOS/nixpkgs/2efa67fd26b6df417c33e4603185c701f260dd83#tack --command ./init.sh
+```
+
+`../../verify-08.sh` checks all 14 native/library implementations in
+fresh copies with spaces in their paths. Use `--syntax-only` for syntax checks or
+`--updates` to test both parent pins.
+See the [lab notes](../../README.md) for maintenance and Git configuration.
