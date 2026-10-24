@@ -103,6 +103,9 @@ if [[ ${1:-} == --updates ]]; then
   updated_drv=''
   for approach in "${approaches[@]}"; do
     example="$scratch/$approach/lab with spaces"
+    # Mana's pinned CLI passes pwd as a Nix expression without quoting it.
+    # Its saved locks build in paths with spaces; maintenance needs a plain path.
+    if [[ $approach == mana ]]; then example="$scratch/$approach/lab"; fi
     mkdir -p "$(dirname -- "$example")"
     cp -a "$root/$approach/04-selective-updates" "$example"
     before_stable=$(lock_entry "$approach" "$example" stable)

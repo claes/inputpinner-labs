@@ -217,10 +217,14 @@ All locks and resolvers are included; no initialization is required to build.
 `./verify-04.sh` checks the shipped revisions, matching derivations across
 approaches, greetings, and unchanged files. It intentionally expects the initial
 locks. `./verify-04.sh --syntax-only` checks Nix and Bash syntax.
-`./verify-04.sh --updates` additionally updates disposable copies in paths with
-spaces, requires unstable to advance, and checks that stable's complete lock
+`./verify-04.sh --updates` additionally updates disposable copies, requires
+unstable to advance, and checks that stable's complete lock
 entry and Hello derivation remain unchanged. Updated builds must also leave
-files unchanged. Its temporary copies are removed automatically.
+files unchanged. Its temporary copies are removed automatically. Update copies
+use paths with spaces except for Mana: its pinned CLI passes the working
+directory as an unquoted Nix expression, so maintenance requires a path without
+spaces. Builds from Mana's saved lock work in paths with spaces. This limitation
+is documented rather than adding a temporary-copy wrapper to the example.
 
 The update exercise requires all maintenance CLIs, Git, and jq. Run:
 
@@ -233,6 +237,14 @@ The maintenance shell uses the same immutable stable seed. Mana runs its pinned
 source itself. If your global Git configuration
 rewrites HTTPS URLs to SSH, the previously documented neutral Git environment
 also applies to this update exercise.
+
+Validated on `x86_64-linux` with Nix 2.34.8. A fresh copy in a path containing
+spaces built all sixteen initial outputs without initialization. All eight
+selective updates chose `5adc50831c259f87faeb09ddf930d43597197473`, produced the
+same updated unstable Hello derivation, and preserved stable's complete lock
+entry and derivation. Both initial and updated builds left their example files
+unchanged. ShellCheck and Nix/Bash syntax checks passed. The shipped locks retain
+the starting snapshots; examples 01–03 are unchanged. Build artifacts were cleaned.
 
 ## Further examples
 
