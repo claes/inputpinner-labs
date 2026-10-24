@@ -30,10 +30,12 @@ jq --arg parent "$(cat revision)" '
       elif .value.repository.repo == "flake-compat" then "upstream-flake-compat"
       else error("Unexpected dependency: " + .key) end), value: .key
   }) | from_entries' "$scratch/npins/sources.json" > source-map.json
+# A short alias must identify each dependency once; reject accidental collisions.
+[[ $(jq 'length' source-map.json) == $(jq '.pins | length' "$scratch/npins/sources.json") ]]
 lon --version >> versions.txt
 lon init
 # Import the resolved graph into this pinner, not into a second fetching backend.
-while IFS=$'\t' read -r name owner repo revision branch url hash; do
+while IFS=$'\t' read -r name owner repo revision branch _url _hash; do
   if [[ $owner == nixos ]]; then owner=NixOS; fi
   lon add github "$owner/$repo" "$branch" --name "$name" --revision "$revision"
 done < <(jq -r --slurpfile names source-map.json '

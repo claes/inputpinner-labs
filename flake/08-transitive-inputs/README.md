@@ -33,9 +33,9 @@ upstream’s lock. Both output paths change; patchelf’s source and version
 stay fixed while its build environment changes. The seed file `revision`
 stays unchanged, proving consumption follows the active pin.
 
-The other six pinners have paired flake-compat and flake-inputs variants.
+The other six pinners have flake-compat, flake-inputs and unflake variants.
 Adding either library here would duplicate the native resolver’s role.
-See the [comparison table](../../README.md) for both alternatives.
+See the [comparison table](../../README.md) for these alternatives.
 
 All examples retain the same nixpkgs and patchelf snapshots. Keep native
 declarations, locks, resolvers, revision seeds and versions in Git. To regenerate
@@ -45,7 +45,7 @@ the initial pins in another disposable copy, remove `flake.lock`, then run:
 ./init.sh
 ```
 
-`../../verify-08.sh` checks all 14 native/library implementations in
+`../../verify-08.sh` checks all 20 native/library/unflake implementations in
 fresh copies with spaces in their paths. Use `--syntax-only` for syntax checks or
 `--updates` to test both parent pins.
 See the [lab notes](../../README.md) for maintenance and Git configuration.

@@ -67,7 +67,7 @@ the initial pins in another disposable copy, remove `lock.json` and `nix/`, then
 
 Mana maintenance requires a path without spaces due to its pinned CLI’s
 cwd quoting bug. Consuming its saved locks works in paths containing spaces.
-`../../verify-08.sh` checks all 14 native/library implementations in
+`../../verify-08.sh` checks all 20 native/library/unflake implementations in
 fresh copies with spaces in their paths. Use `--syntax-only` for syntax checks or
 `--updates` to test both parent pins.
 See the [lab notes](../../README.md) for maintenance and Git configuration.

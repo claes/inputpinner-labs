@@ -44,6 +44,6 @@ the initial pins in another disposable copy, remove `pins.json`, then run:
 ```
 
 The manual scripts also need jq and nix-prefetch-url.
-`../../verify-06.sh` checks all 14 native/library implementations in
+`../../verify-06.sh` checks all 20 native/library/unflake implementations in
 fresh copies with spaces in their paths. Use `--syntax-only` for syntax checks.
 See the [lab notes](../../README.md) for maintenance and Git configuration.

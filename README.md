@@ -310,8 +310,8 @@ Nix/Bash syntax checks passed. Examples 01–04 are unchanged.
 ## Example 06: Use an upstream flake package with flake libraries and unflake
 
 Build `patchelf-demo`, a wrapper around upstream’s `packages.<system>.default`.
-The parent nixpkgs creates the wrapper; patchelf keeps its own locked nixpkgs
-(`c69a9bffbecde46b4b939465422ddc59493d3e4d`). Both library variants preserve
+The parent nixpkgs creates the wrapper; patchelf uses its original nixpkgs
+revision (`c69a9bffbecde46b4b939465422ddc59493d3e4d`). All variants preserve
 that separation and produce the same wrapper and upstream package.
 
 The six source-only pinners have variants explicitly named
@@ -389,7 +389,7 @@ provide commands and discuss the alternatives.
 
 ## Example 07: Apply an upstream flake overlay with flake libraries and unflake
 
-Obtain `overlays.default` through either adapter and pass it to the parent
+Obtain `overlays.default` from the upstream flake and pass it to the parent
 nixpkgs import. Build `pkgs.patchelf-new`, whose recipe now uses the parent’s
 compiler, libraries and build helpers. The overlay adds an attribute alongside
 the parent’s original patchelf. Upstream’s own lock remains unchanged; this is
@@ -407,8 +407,8 @@ recipe composition rather than input-graph sharing.
 | manual | [flake-compat](manual/07-flake-overlay-flake-compat), [flake-inputs](manual/07-flake-overlay-flake-inputs), [unflake](manual/07-flake-overlay-unflake) |
 
 The source pins and adapter revisions match the corresponding 06 variant.
-Both adapters evaluate the overlay without IFD. Every README links its matching
-library counterpart and explains the selected interface and alternatives.
+All variants evaluate the overlay without IFD. Each README explains its
+selected interface and alternatives, including the generated unflake evaluator.
 
 Build with `nix build path:.#patchelf-new` for flakes,
 `nix-build -A patchelf-new` for Mana, and `nix-build` otherwise. Run
@@ -497,8 +497,9 @@ without spaces; its saved locks build correctly in spaced paths.
 `./verify-08.sh` checks all 20 implementations, including both packages’ actual
 build dependencies and four effective upstream nixpkgs references. It compares
 source hashes when native fetch names differ, checks direct path reuse for
-flake-inputs, and checks that staged trees differ only in the intended lock node.
-Native and flake-inputs cases run with IFD disabled; only the flake-compat cases
+flake-inputs and unflake, and checks that staged trees differ only in the intended
+lock node. Unflake also checks the gitignore nixpkgs edge and all source mappings.
+Native, flake-inputs and unflake cases run with IFD disabled; only the flake-compat cases
 enable it. `--updates` exercises changes to the parent pin across all 20 cases,
 requiring other pins and original upstream locks to stay unchanged.
 `--syntax-only` checks Nix and Bash syntax.

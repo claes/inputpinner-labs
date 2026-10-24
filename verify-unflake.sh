@@ -74,6 +74,8 @@ graph() {
         c.upstream.inputs.git-hooks-nix.inputs.nixpkgs
         c.upstream.inputs.git-hooks-nix.inputs.nixpkgs-stable
         c.upstream.inputs.git-hooks-nix.inputs.gitignore.inputs.nixpkgs ];
+      mappedNames = builtins.attrValues names;
+      dependencyNames = builtins.attrNames u._unflake.deps;
       deps = builtins.mapAttrs (name: id: {
         native = toString c.sources.\"\${name}\";
         resolved = toString u._unflake.deps.\"\${id}\".outPath;
@@ -92,7 +94,7 @@ graph() {
          in { drv = p.drvPath; out = p.outPath; })
       else { drv = consumer.patchelf.drvPath; out = consumer.patchelf.outPath;
              helloDrv = consumer.hello.drvPath; helloOut = consumer.hello.outPath; };
-    }")
+    }") || return
   rm -- "$example/capture.nix"
 }
 declare -A hashes
@@ -129,6 +131,8 @@ check() {
   hash "$(jq -r .parent <<< "$info")" "$expected_parent_hash"
   hash "$(jq -r .upstreamSource <<< "$info")" "$patchelf_hash"
   while IFS= read -r path; do hash "$path" "$expected_upstream_hash"; done < <(jq -r '.paths[]' <<< "$info")
+  jq -e '(.mappedNames | sort) == (.dependencyNames | sort) and
+    (.mappedNames | length) == (.mappedNames | unique | length)' <<< "$info" > /dev/null
   jq -e 'all(.deps[]; .native == .resolved)' <<< "$info" > /dev/null
   for key in $(jq -r '.deps | keys[]' <<< "$info"); do
     [[ $(jq -r --arg key "$key" '.deps[$key].revision' <<< "$info") == "$(revision "$approach" "$example" "$key")" ]]

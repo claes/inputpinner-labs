@@ -45,6 +45,6 @@ the initial pins in another disposable copy, remove `nix/tamal/` (including its 
 nix shell github:NixOS/nixpkgs/2efa67fd26b6df417c33e4603185c701f260dd83#nixtamal.bin --command ./init.sh
 ```
 
-`../../verify-07.sh` checks all 14 native/library implementations in
+`../../verify-07.sh` checks all 20 native/library/unflake implementations in
 fresh copies with spaces in their paths. Use `--syntax-only` for syntax checks.
 See the [lab notes](../../README.md) for maintenance and Git configuration.

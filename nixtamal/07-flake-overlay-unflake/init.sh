@@ -30,11 +30,13 @@ jq --arg parent "$(cat revision)" '
       elif .value.repository.repo == "flake-compat" then "upstream-flake-compat"
       else error("Unexpected dependency: " + .key) end), value: .key
   }) | from_entries' "$scratch/npins/sources.json" > source-map.json
+# A short alias must identify each dependency once; reject accidental collisions.
+[[ $(jq 'length' source-map.json) == $(jq '.pins | length' "$scratch/npins/sources.json") ]]
 nixtamal --version >> versions.txt
 nixtamal set-up --no-nixpkgs --fetch-time=eval --hash-algorithm=SHA-256
 printf 'version "1.1.0"\ninputs {\n' > nix/tamal/manifest.kdl
 # Import the resolved graph into this pinner, not into a second fetching backend.
-while IFS=$'\t' read -r name owner repo revision branch url hash; do
+while IFS=$'\t' read -r name owner repo revision _branch _url _hash; do
   if [[ $owner == nixos ]]; then owner=NixOS; fi
   cat >> nix/tamal/manifest.kdl <<EOF
     $name {

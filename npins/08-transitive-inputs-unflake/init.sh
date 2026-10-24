@@ -30,6 +30,8 @@ jq --arg parent "$(cat revision)" '
       elif .value.repository.repo == "flake-compat" then "upstream-flake-compat"
       else error("Unexpected dependency: " + .key) end), value: .key
   }) | from_entries' "$scratch/npins/sources.json" > source-map.json
+# A short alias must identify each dependency once; reject accidental collisions.
+[[ $(jq 'length' source-map.json) == $(jq '.pins | length' "$scratch/npins/sources.json") ]]
 # Keep the supported npins backend and its generated pin names unchanged.
 cp -R "$scratch/npins" .
 

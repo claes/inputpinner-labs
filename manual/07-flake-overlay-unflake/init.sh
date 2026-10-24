@@ -30,9 +30,11 @@ jq --arg parent "$(cat revision)" '
       elif .value.repository.repo == "flake-compat" then "upstream-flake-compat"
       else error("Unexpected dependency: " + .key) end), value: .key
   }) | from_entries' "$scratch/npins/sources.json" > source-map.json
+# A short alias must identify each dependency once; reject accidental collisions.
+[[ $(jq 'length' source-map.json) == $(jq '.pins | length' "$scratch/npins/sources.json") ]]
 printf '{}\n' > pins.json
 # Import the resolved graph into this pinner, not into a second fetching backend.
-while IFS=$'\t' read -r name owner repo revision branch url hash; do
+while IFS=$'\t' read -r name owner _repo revision _branch url hash; do
   if [[ $owner == nixos ]]; then owner=NixOS; fi
   # npins already verified these unpacked hashes while resolving the graph.
   jq --arg name "$name" --arg revision "$revision" --arg url "$url" --arg hash "$hash" \
