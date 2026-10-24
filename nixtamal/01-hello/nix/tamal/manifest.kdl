@@ -1,0 +1,14 @@
+version "1.1.0"
+inputs {
+    nixpkgs {
+        // Bootstrap nixpkgs with built-in fetching, before importing any packages.
+        archive fetch-time=eval {
+            url "https://github.com/NixOS/nixpkgs/archive/{{fresh_value}}.tar.gz"
+        }
+        hash algorithm=SHA-256
+        // Update target: nixos-26.05; see README.md for branch tracking.
+        fresh-cmd {
+            $ echo "2efa67fd26b6df417c33e4603185c701f260dd83"
+        }
+    }
+}
