@@ -1,0 +1,38 @@
+{
+    "flake-compat": {
+        "branch": "master",
+        "description": null,
+        "homepage": null,
+        "owner": "NixOS",
+        "repo": "flake-compat",
+        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
+        "sha256": "0yqfa6rx8md81bcn4szfp0hjq2f3h9i8zjzhqqyfqdkrj5559nmw",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/flake-compat/archive/5edf11c44bc78a0d334f6334cdaf7d60d732daab.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs": {
+        "branch": "nixos-26.05",
+        "description": "Nix Packages collection & NixOS",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2efa67fd26b6df417c33e4603185c701f260dd83",
+        "sha256": "0y0ars4h19fiprdfcjcdiqylm9hwcy6zy8h9nnskwjzchapsmgdz",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/2efa67fd26b6df417c33e4603185c701f260dd83.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "patchelf": {
+        "branch": "master",
+        "description": "A small utility to modify the dynamic linker and RPATH of ELF executables",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "patchelf",
+        "rev": "3e996dbef1fa0658012f8dd290bddcf0302acade",
+        "sha256": "0yib84bh30xl1vl1ymkmxzisbkhf130pcxdq3ckrdlmfh8hwpkpr",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/patchelf/archive/3e996dbef1fa0658012f8dd290bddcf0302acade.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}

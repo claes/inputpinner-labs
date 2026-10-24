@@ -1,0 +1,18 @@
+{
+  "nixpkgs": {
+    "type": "github",
+    "owner": "NixOS",
+    "repo": "nixpkgs",
+    "rev": "2efa67fd26b6df417c33e4603185c701f260dd83",
+    "narHash": "sha256-v72qr4LsSz61tQki/41nHKZKPY6NSeZavtGlAInOCng=",
+    "lastModified": 1791353474
+  },
+  "patchelf": {
+    "type": "github",
+    "owner": "NixOS",
+    "repo": "patchelf",
+    "rev": "3e996dbef1fa0658012f8dd290bddcf0302acade",
+    "narHash": "sha256-+c7LIYKu0pYnG7h1dsEIDs6l4+91Vh/oDrSDARdBK3o=",
+    "lastModified": 1792494619
+  }
+}

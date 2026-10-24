@@ -364,20 +364,82 @@ upstream nixpkgs pins stayed separate. Builds left example files unchanged.
 Tests used paths containing spaces and required no initialization or pinner CLIs.
 ShellCheck and Nix/Bash syntax checks passed. Examples 01–05 are unchanged.
 
+## Example 07: Apply an upstream flake overlay
+
+Use the same [patchelf snapshot](https://github.com/NixOS/patchelf/blob/3e996dbef1fa0658012f8dd290bddcf0302acade/flake.nix)
+as 06, now selecting `overlays.default` and applying it when importing the
+parent nixpkgs. Build the new `pkgs.patchelf-new` attribute and run its
+`bin/patchelf --version` for `patchelf 0.19.2`.
+
+The overlay calls its recipe with the receiving package set, so this package
+uses the parent toolchain and build helpers. Its `final` argument is the resulting
+package set, which the recipe uses for `callPackage`. Example 06 selected the
+already constructed upstream package output and wrapped it. The source revision
+and upstream lock are identical in these two examples; their package derivations
+can still differ because the package sets differ.
+
+| Approach | Example | Obtaining the overlay |
+| --- | --- | --- |
+| flake | [07-flake-overlay](flake/07-flake-overlay) | Native flake input |
+| niv | [07-flake-overlay](niv/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
+| npins | [07-flake-overlay](npins/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
+| lon | [07-flake-overlay](lon/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
+| nixtamal | [07-flake-overlay](nixtamal/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
+| tack | [07-flake-overlay](tack/07-flake-overlay) | Native flake pin |
+| mana | [07-flake-overlay](mana/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
+| manual | [07-flake-overlay](manual/07-flake-overlay) | Same pinned flake-compat adapter as 06 |
+
+For flakes, run `nix build path:.#patchelf-new` (or `nix build path:.`). For Mana,
+run `nix-build -A patchelf-new`; for the others, run `nix-build`. All produce
+`result/bin/patchelf`. The attribute’s name does not rename the executable.
+The expressions comment the two steps: obtaining the upstream overlay and
+passing it through `overlays = [ ... ];` to the parent import. Each README
+explains its approach, the relevant boundary, and alternatives considered.
+
+All locks, generated resolvers, seed revisions, and tool-version records are
+copied unchanged from 06. Builds require no initialization or maintenance CLIs.
+The included initializers reproduce those pins using the same tool setup as 06.
+The default overlay adds attributes alongside the original parent `patchelf`;
+no input-sharing rule or upstream lock modification is involved. Upstream’s
+locked nixpkgs still supplies helper functions used in overlay evaluation.
+This example changes the selected package’s build environment, and leaves
+upstream input-graph sharing for 08. See the
+[Nixpkgs overlay documentation](https://nixos.org/manual/nixpkgs/stable/#chap-overlays)
+for the receiving package-set interface.
+
+`./verify-07.sh` uses disposable fresh copies with spaces in their paths. It
+checks source pins, upstream locks, matching derivations, successful builds and
+version output, the parent standard environment in build inputs, and unchanged
+files during builds. It compares the result with 06’s upstream package and the
+parent’s existing patchelf, and checks that the overlay adds the new attribute.
+`./verify-07.sh --syntax-only` checks Nix and Bash syntax. The full verifier
+targets `x86_64-linux` and needs Nix, jq, GNU tar and standard GNU utilities;
+it requires no pinner CLIs.
+
+Validated on `x86_64-linux` with Nix 2.34.8. All eight fresh copies produced
+the same overlay package derivation and reported `patchelf 0.19.2`. Build-input
+inspection confirmed the parent standard environment, and the executable’s
+interpreter matched the parent dynamic linker. The result differs from 06’s
+upstream package and from the original parent `patchelf` (0.15.2), which remains
+unchanged. Patchelf’s build-time test suite passed: 68 passed, 4 skipped, no
+failures. Locks, source hashes, and compatibility pins match 06; builds left
+example files unchanged. Tests used paths containing spaces without initialization
+or pinner CLIs. ShellCheck and Nix/Bash syntax checks passed. Examples 01–06
+are unchanged, and the new directories contain no build artifacts.
+
 ## Further examples
 
-Examples 01–06 are implemented. The remaining numbers reserve the
+Examples 01–07 are implemented. The remaining numbers reserve the
 following concepts; exact fixtures and commands will be worked out individually.
 
 | Number and name | Concept and task |
 | --- | --- |
-| 07-flake-overlay | Apply patchelf's `overlays.default` to the parent's nixpkgs; build `patchelf-new`. |
 | 08-transitive-inputs | Make the upstream package use the parent's nixpkgs revision. |
 | 09-patches | Patch a small controlled dependency, including an update that invalidates the patch. |
 | 10-reproducibility | Explore unused inputs, offline caches, unavailable upstreams, and hash failures. |
 
-For 07 and 08, retain the patchelf snapshot from 06 so the differences focus on
-overlay application and dependency sharing.
+For 08, retain the patchelf snapshot from 06 and 07 so the difference focuses on
+dependency sharing.
 For 10, distinguish cached input evaluation from a build whose full closure is
 already available offline. Run destructive failure demonstrations in disposable
 copies.
