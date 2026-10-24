@@ -1,0 +1,18 @@
+{
+  "nixpkgs": {
+    "type": "github",
+    "owner": "NixOS",
+    "repo": "nixpkgs",
+    "rev": "2efa67fd26b6df417c33e4603185c701f260dd83",
+    "narHash": "sha256-v72qr4LsSz61tQki/41nHKZKPY6NSeZavtGlAInOCng=",
+    "lastModified": 1791353474
+  },
+  "systems": {
+    "type": "github",
+    "owner": "nix-systems",
+    "repo": "default",
+    "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+    "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+    "lastModified": 1681028828
+  }
+}
