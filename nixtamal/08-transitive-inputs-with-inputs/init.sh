@@ -8,12 +8,13 @@ if [[ -e nix/tamal/manifest.kdl ]]; then
 fi
 nix --version > versions.txt
 nixtamal --version >> versions.txt
-nixtamal set-up --no-nixpkgs --fetch-time=eval --hash-algorithm=SHA-256
+# Build-time fetchers provide source records for the native with-inputs loader.
+nixtamal set-up --no-nixpkgs --fetch-time=build --hash-algorithm=SHA-256
 cat > nix/tamal/manifest.kdl <<EOF
 version "1.1.0"
 inputs {
     nixpkgs {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/NixOS/nixpkgs/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256
@@ -22,7 +23,7 @@ inputs {
         }
     }
     patchelf {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/NixOS/patchelf/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256
@@ -31,7 +32,7 @@ inputs {
         }
     }
     with-inputs {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/denful/with-inputs/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256
@@ -40,7 +41,7 @@ inputs {
         }
     }
     flake-parts {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/hercules-ci/flake-parts/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256
@@ -49,7 +50,7 @@ inputs {
         }
     }
     git-hooks-nix {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/cachix/git-hooks.nix/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256

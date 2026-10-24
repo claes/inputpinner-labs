@@ -352,7 +352,8 @@ project files during builds. `--syntax-only` checks Nix and Bash syntax.
 
 Validated on `x86_64-linux` with Nix 2.34.8: all 26 implementations produced
 the same wrapper and referenced the original upstream package. All variants
-retained upstream’s independent nixpkgs revision, and IFD was disabled throughout.
+retained upstream’s independent nixpkgs revision. IFD was enabled only for
+Nixtamal/with-inputs, whose native loader reads build-time fetcher outputs.
 The flake-inputs initializers regenerated matching pins and built successfully
 for all six source-only pinners in disposable copies.
 
@@ -403,20 +404,32 @@ initialization or unflake installed, and with IFD disabled.
 
 The `-with-inputs` variants use
 [denful/with-inputs](https://github.com/denful/with-inputs/tree/641d01ef95eae1aeaa257ffd48102ab9a308f2a2)
-and its complete sources → follows → outputs interface. Each example keeps the
-four named bindings together in one file: `sources`, `with-inputs`, `follows`
-and `outputs`. The final call is `with-inputs [ follows inputsOverrides ] outputs`.
+and its complete sources → follows → outputs interface. Each example keeps
+source loading, `follows` and `outputs` together in one file, with named bindings
+that make each step visible. The final call is `with-inputs [ follows inputsOverrides ] outputs`.
 The loader binds sources first, and caller overrides follow the example's own
 declarations. `system` remains optional. The public result includes `.inputs`,
 `.outputs` and project `self`, alongside the named packages.
 
-Niv, npins and Lon use the built-in `.from.*` loaders. Nixtamal's evaluation-time
-archives return bare paths, so its local source binding wraps them as `outPath`
-records; this preserves IFD-free builds instead of adopting upstream's
-build-time fetcher template. Mana uses its native dependency injection, and
-manual uses its recorded archive fetches. Nixtamal, Mana and manual bind sources
-and project `self` through the generic API. All teaching logic stays in `default.nix`, or Mana's
-existing `entrypoint.nix`; no extra bootstrap, follows or outputs files are added.
+Niv, npins, Lon and Nixtamal use the built-in `.from.*` loaders. Nixtamal uses
+the upstream declaration directly:
+
+```nix
+with-inputs =
+  (import (import ./nix/tamal {}).with-inputs).from.nixtamal ./.;
+```
+
+Its archives use `fetch-time=build`, giving the loader native source records.
+Reading flake files from these outputs requires **IFD (Import From Derivation)**:
+evaluation can build source fetchers before defining the packages. Add
+`--option allow-import-from-derivation true` to these Nixtamal build commands.
+Evaluation-time archives plus a source conversion remain a documented
+alternative; the native loader is chosen for a simpler example.
+
+Mana uses its native dependency injection, and manual uses its recorded archive
+fetches. They bind sources and project `self` through the generic API. All
+teaching logic stays in `default.nix`, or Mana's existing `entrypoint.nix`; no
+extra bootstrap, follows or outputs files are added.
 
 Each native pinner still owns six pins in 06/07 and five in 08. Explicit follows
 select `upstream-nixpkgs` throughout patchelf's graph in 06/07 and parent
@@ -429,8 +442,9 @@ Build all six pinners' 06 variants with `nix-build -A patchelf-demo`, and 07 wit
 `verify-with-inputs.sh` inspects public inputs and named outputs directly,
 including `inputs.self`, caller overrides, native pin preservation and parent-only
 updates in 08. It checks matching derivations and builds, compiler dependencies,
-and immutable files in fresh copies with spaces in their paths. All with-inputs
-cases disable import from derivation and consume the shipped native resolver.
+and immutable files in fresh copies with spaces in their paths. Only the three
+Nixtamal/with-inputs cases enable IFD; the other with-inputs cases disable it.
+All consume the shipped native resolver without a maintenance CLI.
 
 ## Example 07: Apply an upstream flake overlay with flake libraries
 
@@ -452,7 +466,7 @@ recipe composition rather than input-graph sharing.
 | manual | [flake-compat](manual/07-flake-overlay-flake-compat), [flake-inputs](manual/07-flake-overlay-flake-inputs), [unflake](manual/07-flake-overlay-unflake), [with-inputs](manual/07-flake-overlay-with-inputs) |
 
 The source pins and adapter revisions match the corresponding 06 variant.
-All variants evaluate the overlay without IFD. Each README explains its
+Only Nixtamal/with-inputs needs IFD to load its build-time source fetches. Each README explains its
 selected interface and alternatives, including the generated unflake evaluator and direct with-inputs evaluation.
 
 Build with `nix build path:.#patchelf-new` for flakes,
@@ -468,8 +482,9 @@ files during builds. It distinguishes the result from 06’s upstream package.
 
 Validated on `x86_64-linux` with Nix 2.34.8: all 26 implementations produced
 the same overlay package with the parent standard environment and dynamic linker.
-The original parent package and upstream source trees stayed unchanged. All
-variants worked with IFD disabled, including the generated unflake evaluators.
+The original parent package and upstream source trees stayed unchanged. IFD
+was enabled only for Nixtamal/with-inputs; the other variants, including the
+generated unflake evaluators, passed with it disabled.
 
 ## Example 08: Hello and upstream patchelf share nixpkgs
 
@@ -544,8 +559,8 @@ build dependencies and four effective upstream nixpkgs references. It compares
 source hashes when native fetch names differ, checks direct path reuse for
 flake-inputs, unflake and with-inputs, and checks that staged trees differ only in the intended
 lock node. Unflake also checks the gitignore nixpkgs edge and all source mappings.
-Native, flake-inputs, unflake and with-inputs cases run with IFD disabled; only the flake-compat cases
-enable it. `--updates` exercises changes to the parent pin across all 26 cases,
+IFD is enabled only for staged flake-compat and Nixtamal/with-inputs cases.
+All other cases disable it. `--updates` exercises changes to the parent pin across all 26 cases,
 requiring other pins and original upstream locks to stay unchanged.
 `--syntax-only` checks Nix and Bash syntax.
 
@@ -564,8 +579,8 @@ at each pin. Only the parent pin changed; upstream and adapter records stayed
 fixed. All effective input edges matched the parent source contents, including
 the fifth edge through gitignore in unflake, and both packages used the parent
 standard environment. Staged compatibility trees differed
-only in the intended lock node. Native, flake-inputs, unflake and with-inputs cases passed
-with IFD disabled; IFD was enabled only for the staged flake-compat cases. Builds left
+only in the intended lock node. IFD was enabled only for staged flake-compat
+and Nixtamal/with-inputs cases; all other cases passed with it disabled. Builds left
 project files and upstream sources unchanged. Syntax checks and ShellCheck
 passed for all three flake-related exercises. Examples 01–05 and 09, existing
 `.gitignore` edits and the moved Nixtamal result link were preserved.

@@ -1,13 +1,8 @@
 { system ? builtins.currentSystem, inputsOverrides ? {} }:
 let
-  # Evaluation-time archives return paths; the library expects source records.
-  sources = builtins.mapAttrs (_: outPath: { inherit outPath; })
-    (import ./nix/tamal {});
-
-  # Bind sources and project self; the remaining arguments are follows and outputs.
-  with-inputs = (import sources.with-inputs) (sources // {
-    self.outPath = ./.;
-  });
+  # The native loader reads Nixtamal's pins and supplies project self.
+  with-inputs =
+    (import (import ./nix/tamal {}).with-inputs).from.nixtamal ./.;
 
   # Input relationships are separate from the package definitions.
   follows = {

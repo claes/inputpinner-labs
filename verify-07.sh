@@ -206,4 +206,4 @@ printf '%s\n' 'Example 07 passed: 14 native/library implementations, with IFD di
 
 ./verify-unflake.sh 07 "$@"
 ./verify-with-inputs.sh 07 "$@"
-printf '%s\n' 'Example 07 passed: all 26 implementations, with IFD disabled.'
+printf '%s\n' 'Example 07 passed: all 26 implementations; IFD enabled only for Nixtamal/with-inputs.'

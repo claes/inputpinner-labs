@@ -3,23 +3,29 @@
 Build a parent-owned wrapper around upstream patchelf's package output.
 
 ```sh
-nix-build -A patchelf-demo
+nix-build --option allow-import-from-derivation true -A patchelf-demo
 ./result/bin/patchelf-demo --version
 ```
 
-Read `default.nix` from top to bottom: `sources` provides the pinned trees,
-`with-inputs` binds those sources, `follows` declares their relationships, and
-`outputs` defines our packages from resolved inputs. Everything is in this file.
-The final call supplies `[ follows inputsOverrides ]` and `outputs`, completing
-[with-inputs' sources → follows → outputs interface](https://github.com/denful/with-inputs/tree/641d01ef95eae1aeaa257ffd48102ab9a308f2a2#api). Caller overrides take
-precedence; `system` selects the target system. The result exposes named package
-outputs, `.inputs`, `.outputs` and `inputs.self`.
+Read `default.nix` from top to bottom: `with-inputs` loads the native pins,
+`follows` declares their relationships, and `outputs` defines our packages from
+resolved inputs. The final call supplies `[ follows inputsOverrides ]` and
+`outputs`, completing the library's sources → follows → outputs interface.
+Caller overrides take precedence; `system` selects the target system. The result
+exposes named packages, `.inputs`, `.outputs` and `inputs.self`.
 
-Our evaluation-time archive resolver returns paths. A small conversion wraps
-them as `outPath` records, then the generic API supplies project `self`. The
-upstream `.from.nixtamal` template uses build-time fetcher records; using that
-approach here would introduce IFD when reading upstream flake files. We retain
-evaluation-time fetching so these examples work with IFD disabled.
+The `.from.nixtamal` loader supplies source handling and project `self` metadata:
+
+```nix
+with-inputs =
+  (import (import ./nix/tamal {}).with-inputs).from.nixtamal ./.;
+```
+
+The manifest uses `fetch-time=build`: native archive fetchers return source
+records accepted by this loader. Reading `flake.nix` from their build outputs
+requires **IFD (Import From Derivation)**. Evaluation may therefore build the
+source fetchers before defining our packages; the commands above explicitly
+allow this. No source conversion or manual `self` setup is needed.
 
 Explicit follows keep patchelf and its transitive nixpkgs inputs on the separate
 `upstream-nixpkgs` pin. Our output function uses parent `inputs.nixpkgs`.
@@ -33,7 +39,9 @@ maintenance CLI. `init.sh` recreates the pins from revision seeds in a fresh
 copy and refuses to overwrite existing records. Before reinitializing a
 **disposable** copy, remove `nix/tamal/`.
 
-Alternatives: upstream separates the bindings into files; this lab keeps them
+Alternatives: `fetch-time=eval` would avoid IFD, but its bare paths need a
+conversion before the generic with-inputs API can use them. The native loader
+is chosen here for clarity. Upstream separates the bindings into files; this lab keeps them
 together so the whole example is visible. Automatic name matching could replace
 the explicit patchelf follows in 08, but would hide the teaching point. The
 library's `from.flake` helper could fetch lock-file sources; native pins keep

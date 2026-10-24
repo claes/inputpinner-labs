@@ -246,4 +246,4 @@ printf '%s\n' 'Example 08 passed: 14 native/library implementations; IFD enabled
 
 ./verify-unflake.sh 08 "$@"
 ./verify-with-inputs.sh 08 "$@"
-printf '%s\n' 'Example 08 passed: all 26 implementations; IFD enabled only for staged flake-compat.'
+printf '%s\n' 'Example 08 passed: all 26 implementations; IFD enabled only for staged flake-compat and Nixtamal/with-inputs.'

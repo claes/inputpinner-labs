@@ -30,6 +30,7 @@ if [[ ${1:-} == --syntax-only ]]; then
 fi
 export NIX_CONFIG="${NIX_CONFIG:-}
 allow-import-from-derivation = false"
+ifd_options=(--option allow-import-from-derivation false)
 system=$(nix eval --impure --raw --expr builtins.currentSystem)
 [[ $system == x86_64-linux ]] || { printf '%s\n' 'These checks target x86_64-linux.' >&2; exit 2; }
 # Isolate builds from shell-level source overrides.
@@ -54,7 +55,7 @@ revision() { records "$1" "$2" | jq -r --arg name "$3" '.[$name] | .rev // .revi
 # Inspect the public project interface; no source rewriting or private bindings.
 graph() {
   local example=$1 override=${2:-false}
-  (cd "$example" && nix eval --impure --json --expr "
+  (cd "$example" && nix eval "${ifd_options[@]}" --impure --json --expr "
     let
       project = import ./. (if $override then {
         inputsOverrides.nixpkgs.outPath = builtins.fetchTarball {
@@ -141,7 +142,7 @@ check() {
   [[ $(jq -c .outputNames <<< "$info") == "$expected_names" ]]
   if [[ $number == 08 ]]; then
     jq -e '.parent as $parent | all(.paths[]; . == $parent)' <<< "$info" > /dev/null
-    (cd "$example" && nix-build -A hello -o result-hello && nix-build -A patchelf -o result-patchelf)
+    (cd "$example" && nix-build "${ifd_options[@]}" -A hello -o result-hello && nix-build "${ifd_options[@]}" -A patchelf -o result-patchelf)
     [[ $("$example/result-hello/bin/hello") == 'Hello, world!' &&
        $("$example/result-patchelf/bin/patchelf" --version) == 'patchelf 0.19.2' ]]
     [[ $(readlink -f "$example/result-hello") == "$(jq -r .consumer.helloOut <<< "$info")" &&
@@ -153,7 +154,7 @@ check() {
     [[ $("$example/result-patchelf/bin/patchelf" --print-interpreter "$example/result-hello/bin/hello") == "$(jq -r .dynamicLinker <<< "$info")" ]]
   else
     if [[ $number == 06 ]]; then attribute=patchelf-demo; else attribute=patchelf-new; fi
-    (cd "$example" && nix-build -A "$attribute")
+    (cd "$example" && nix-build "${ifd_options[@]}" -A "$attribute")
     [[ $(readlink -f "$example/result") == "$(jq -r .consumer.out <<< "$info")" ]]
     if [[ $number == 06 ]]; then
       [[ $("$example/result/bin/patchelf-demo" --version) == 'patchelf 0.19.2' ]]
@@ -175,6 +176,11 @@ if [[ $number == 08 ]]; then
   alternate_hello=$(nix eval --raw "github:NixOS/nixpkgs/$old#legacyPackages.$system.hello.drvPath")
 fi
 for approach in "${approaches[@]}"; do
+  # Only Nixtamal's native loader reads build-time archive outputs during evaluation.
+  ifd_options=(--option allow-import-from-derivation false)
+  if [[ $approach == nixtamal ]]; then
+    ifd_options=(--option allow-import-from-derivation true)
+  fi
   relative="$approach/$number-$slug-with-inputs"
   example="$scratch/lab with spaces/$relative"
   mkdir -p "$example"
@@ -230,4 +236,4 @@ for approach in "${approaches[@]}"; do
   expected_hello=$initial_hello
   printf '%s: parent-only update changed both packages; consumer stayed unchanged\n' "$relative"
 done
-printf 'Example %s: all six with-inputs variants passed with IFD disabled.\n' "$number"
+printf 'Example %s: all six with-inputs variants passed; IFD enabled only for Nixtamal.\n' "$number"

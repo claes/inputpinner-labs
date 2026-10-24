@@ -1,7 +1,7 @@
 version "1.1.0"
 inputs {
     nixpkgs {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/NixOS/nixpkgs/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256
@@ -10,7 +10,7 @@ inputs {
         }
     }
     patchelf {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/NixOS/patchelf/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256
@@ -19,7 +19,7 @@ inputs {
         }
     }
     with-inputs {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/denful/with-inputs/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256
@@ -28,7 +28,7 @@ inputs {
         }
     }
     flake-parts {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/hercules-ci/flake-parts/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256
@@ -37,7 +37,7 @@ inputs {
         }
     }
     git-hooks-nix {
-        archive fetch-time=eval {
+        archive fetch-time=build {
             url "https://github.com/cachix/git-hooks.nix/archive/{{fresh_value}}.tar.gz"
         }
         hash algorithm=SHA-256
