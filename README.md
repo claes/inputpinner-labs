@@ -307,15 +307,15 @@ Checkout preparation refused to overwrite local work, and cleanup preserved
 checkout files and links, including a file named `keep.tmp`. ShellCheck and
 Nix/Bash syntax checks passed. Examples 01–04 are unchanged.
 
-## Example 06: Use an upstream flake package with either library
+## Example 06: Use an upstream flake package with flake libraries and unflake
 
 Build `patchelf-demo`, a wrapper around upstream’s `packages.<system>.default`.
 The parent nixpkgs creates the wrapper; patchelf keeps its own locked nixpkgs
 (`c69a9bffbecde46b4b939465422ddc59493d3e4d`). Both library variants preserve
 that separation and produce the same wrapper and upstream package.
 
-The six source-only pinners now have paired directories explicitly named
-`-flake-compat` and `-flake-inputs`. Flakes and tack retain one native reference.
+The six source-only pinners have variants explicitly named
+`-flake-compat`, `-flake-inputs` and `-unflake`. Flakes and tack retain one native reference.
 Both adapters are pinned: [flake-compat](https://github.com/NixOS/flake-compat/tree/5edf11c44bc78a0d334f6334cdaf7d60d732daab)
 and [flake-inputs](https://github.com/fricklerhandwerk/flake-inputs/tree/5c1279c5b5dc81dfd245fc4d072446fc56f341c7).
 The parent nixpkgs remains `2efa67fd26b6df417c33e4603185c701f260dd83`; patchelf
@@ -327,13 +327,13 @@ the pre-existing Nixtamal 07 `result` symlink was preserved there.
 | Approach | Variant(s) |
 | --- | --- |
 | flake | [native](flake/06-flake-package) |
-| niv | [flake-compat](niv/06-flake-package-flake-compat), [flake-inputs](niv/06-flake-package-flake-inputs) |
-| npins | [flake-compat](npins/06-flake-package-flake-compat), [flake-inputs](npins/06-flake-package-flake-inputs) |
-| lon | [flake-compat](lon/06-flake-package-flake-compat), [flake-inputs](lon/06-flake-package-flake-inputs) |
-| nixtamal | [flake-compat](nixtamal/06-flake-package-flake-compat), [flake-inputs](nixtamal/06-flake-package-flake-inputs) |
+| niv | [flake-compat](niv/06-flake-package-flake-compat), [flake-inputs](niv/06-flake-package-flake-inputs), [unflake](niv/06-flake-package-unflake) |
+| npins | [flake-compat](npins/06-flake-package-flake-compat), [flake-inputs](npins/06-flake-package-flake-inputs), [unflake](npins/06-flake-package-unflake) |
+| lon | [flake-compat](lon/06-flake-package-flake-compat), [flake-inputs](lon/06-flake-package-flake-inputs), [unflake](lon/06-flake-package-unflake) |
+| nixtamal | [flake-compat](nixtamal/06-flake-package-flake-compat), [flake-inputs](nixtamal/06-flake-package-flake-inputs), [unflake](nixtamal/06-flake-package-unflake) |
 | tack | [native](tack/06-flake-package) |
-| mana | [flake-compat](mana/06-flake-package-flake-compat), [flake-inputs](mana/06-flake-package-flake-inputs) |
-| manual | [flake-compat](manual/06-flake-package-flake-compat), [flake-inputs](manual/06-flake-package-flake-inputs) |
+| mana | [flake-compat](mana/06-flake-package-flake-compat), [flake-inputs](mana/06-flake-package-flake-inputs), [unflake](mana/06-flake-package-unflake) |
+| manual | [flake-compat](manual/06-flake-package-flake-compat), [flake-inputs](manual/06-flake-package-flake-inputs), [unflake](manual/06-flake-package-unflake) |
 
 flake-compat returns `.outputs` from its imported adapter; flake-inputs uses
 `.import-flake { src = sources.patchelf; }`. Neither variant overrides an input
@@ -345,7 +345,7 @@ Build with `nix build path:.` for flakes, `nix-build -A patchelf-demo` for Mana,
 and `nix-build` otherwise. Run `./result/bin/patchelf-demo --version` for
 `patchelf 0.19.2`. The wrapper forwards arguments to the upstream executable.
 
-`./verify-06.sh` checks all 14 implementations against the directly evaluated
+`./verify-06.sh` checks all 20 implementations against the directly evaluated
 upstream flake: source pins and hashes, unchanged upstream locks, package and
 wrapper derivations, executable dependencies, argument forwarding and unchanged
 project files during builds. `--syntax-only` checks Nix and Bash syntax.
@@ -356,7 +356,38 @@ retained upstream’s independent nixpkgs, and IFD was disabled throughout.
 The flake-inputs initializers regenerated matching pins and built successfully
 for all six source-only pinners in disposable copies.
 
-## Example 07: Apply an upstream flake overlay with either library
+### Unflake variants in examples 06–08
+
+[Unflake](https://codeberg.org/goldstein/unflake) generates dependency injection
+code as well as resolving a graph. It ignores dependency `flake.lock` files,
+so its variants explicitly seed the transitive revisions instead of silently
+resolving moving branches. The tool is fixed at
+`22d908471bf3201856cd10d22813d85c66a75907` in each `unflake-tool-ref`.
+
+npins uses the supported backend directly. The other five pinners use a small
+local source bridge: initialization generates using npins in a temporary
+directory, imports the pins into the chosen pinner and replaces only the
+generated backend import. Builds fetch exclusively through that pinner and
+need neither npins nor unflake installed. The bridge is maintained by this lab;
+it is not an upstream-supported backend. No extra runtime library or IFD is
+needed. Each example includes its generated evaluator and native locks.
+
+The pinned unflake version ignores nested overrides. Its generated graph
+therefore includes git-hooks’ gitignore and flake-compat sources, which the
+native reference avoids through empty follows. Explicit rules unify the
+relevant nixpkgs spellings, including registry and tarball references. In 06/07
+they select the original upstream nixpkgs separately from our parent; in 08
+they select the parent for every edge. The incidental flake-compat source is
+not used as the evaluator in these variants.
+
+The existing verifiers invoke `verify-unflake.sh` to add six cases per exercise,
+for 20 implementations each. Example 08 also checks a fifth edge through
+gitignore, and its update check requires the generated evaluator to stay
+unchanged while only the native parent pin changes. Initialization requires
+npins for generation plus the chosen pinner (and Nix/jq); per-example READMEs
+provide commands and discuss the alternatives.
+
+## Example 07: Apply an upstream flake overlay with flake libraries and unflake
 
 Obtain `overlays.default` through either adapter and pass it to the parent
 nixpkgs import. Build `pkgs.patchelf-new`, whose recipe now uses the parent’s
@@ -367,13 +398,13 @@ recipe composition rather than input-graph sharing.
 | Approach | Variant(s) |
 | --- | --- |
 | flake | [native](flake/07-flake-overlay) |
-| niv | [flake-compat](niv/07-flake-overlay-flake-compat), [flake-inputs](niv/07-flake-overlay-flake-inputs) |
-| npins | [flake-compat](npins/07-flake-overlay-flake-compat), [flake-inputs](npins/07-flake-overlay-flake-inputs) |
-| lon | [flake-compat](lon/07-flake-overlay-flake-compat), [flake-inputs](lon/07-flake-overlay-flake-inputs) |
-| nixtamal | [flake-compat](nixtamal/07-flake-overlay-flake-compat), [flake-inputs](nixtamal/07-flake-overlay-flake-inputs) |
+| niv | [flake-compat](niv/07-flake-overlay-flake-compat), [flake-inputs](niv/07-flake-overlay-flake-inputs), [unflake](niv/07-flake-overlay-unflake) |
+| npins | [flake-compat](npins/07-flake-overlay-flake-compat), [flake-inputs](npins/07-flake-overlay-flake-inputs), [unflake](npins/07-flake-overlay-unflake) |
+| lon | [flake-compat](lon/07-flake-overlay-flake-compat), [flake-inputs](lon/07-flake-overlay-flake-inputs), [unflake](lon/07-flake-overlay-unflake) |
+| nixtamal | [flake-compat](nixtamal/07-flake-overlay-flake-compat), [flake-inputs](nixtamal/07-flake-overlay-flake-inputs), [unflake](nixtamal/07-flake-overlay-unflake) |
 | tack | [native](tack/07-flake-overlay) |
-| mana | [flake-compat](mana/07-flake-overlay-flake-compat), [flake-inputs](mana/07-flake-overlay-flake-inputs) |
-| manual | [flake-compat](manual/07-flake-overlay-flake-compat), [flake-inputs](manual/07-flake-overlay-flake-inputs) |
+| mana | [flake-compat](mana/07-flake-overlay-flake-compat), [flake-inputs](mana/07-flake-overlay-flake-inputs), [unflake](mana/07-flake-overlay-unflake) |
+| manual | [flake-compat](manual/07-flake-overlay-flake-compat), [flake-inputs](manual/07-flake-overlay-flake-inputs), [unflake](manual/07-flake-overlay-unflake) |
 
 The source pins and adapter revisions match the corresponding 06 variant.
 Both adapters evaluate the overlay without IFD. Every README links its matching
@@ -384,7 +415,7 @@ Build with `nix build path:.#patchelf-new` for flakes,
 `./result/bin/patchelf --version` for `patchelf 0.19.2`; the attribute name does
 not rename the executable.
 
-`./verify-07.sh` checks all 14 implementations for identical overlay packages,
+`./verify-07.sh` checks all 20 implementations for identical overlay packages,
 parent build dependencies and dynamic linker, retained source pins and upstream
 locks, the added attribute, preservation of the original package and unchanged
 files during builds. It distinguishes the result from 06’s upstream package.
@@ -404,13 +435,13 @@ implementation exposes `hello` and `patchelf` directly, without a wrapper.
 | Approach | Variant(s) |
 | --- | --- |
 | flake | [native](flake/08-transitive-inputs) |
-| niv | [flake-compat](niv/08-transitive-inputs-flake-compat), [flake-inputs](niv/08-transitive-inputs-flake-inputs) |
-| npins | [flake-compat](npins/08-transitive-inputs-flake-compat), [flake-inputs](npins/08-transitive-inputs-flake-inputs) |
-| lon | [flake-compat](lon/08-transitive-inputs-flake-compat), [flake-inputs](lon/08-transitive-inputs-flake-inputs) |
-| nixtamal | [flake-compat](nixtamal/08-transitive-inputs-flake-compat), [flake-inputs](nixtamal/08-transitive-inputs-flake-inputs) |
+| niv | [flake-compat](niv/08-transitive-inputs-flake-compat), [flake-inputs](niv/08-transitive-inputs-flake-inputs), [unflake](niv/08-transitive-inputs-unflake) |
+| npins | [flake-compat](npins/08-transitive-inputs-flake-compat), [flake-inputs](npins/08-transitive-inputs-flake-inputs), [unflake](npins/08-transitive-inputs-unflake) |
+| lon | [flake-compat](lon/08-transitive-inputs-flake-compat), [flake-inputs](lon/08-transitive-inputs-flake-inputs), [unflake](lon/08-transitive-inputs-unflake) |
+| nixtamal | [flake-compat](nixtamal/08-transitive-inputs-flake-compat), [flake-inputs](nixtamal/08-transitive-inputs-flake-inputs), [unflake](nixtamal/08-transitive-inputs-unflake) |
 | tack | [native](tack/08-transitive-inputs) |
-| mana | [flake-compat](mana/08-transitive-inputs-flake-compat), [flake-inputs](mana/08-transitive-inputs-flake-inputs) |
-| manual | [flake-compat](manual/08-transitive-inputs-flake-compat), [flake-inputs](manual/08-transitive-inputs-flake-inputs) |
+| mana | [flake-compat](mana/08-transitive-inputs-flake-compat), [flake-inputs](mana/08-transitive-inputs-flake-inputs), [unflake](mana/08-transitive-inputs-unflake) |
+| manual | [flake-compat](manual/08-transitive-inputs-flake-compat), [flake-inputs](manual/08-transitive-inputs-flake-inputs), [unflake](manual/08-transitive-inputs-unflake) |
 
 Native flakes use `patchelf.inputs.nixpkgs.follows = "nixpkgs"`. Tack uses
 `all_follow`, including upstream’s `nixpkgs-lib` and `nixpkgs-stable` aliases.
@@ -463,12 +494,12 @@ source and version stay fixed. The initialization seed `revision` stays unchange
 README commands bootstrap each maintenance CLI. Mana maintenance needs a path
 without spaces; its saved locks build correctly in spaced paths.
 
-`./verify-08.sh` checks all 14 implementations, including both packages’ actual
+`./verify-08.sh` checks all 20 implementations, including both packages’ actual
 build dependencies and four effective upstream nixpkgs references. It compares
 source hashes when native fetch names differ, checks direct path reuse for
 flake-inputs, and checks that staged trees differ only in the intended lock node.
 Native and flake-inputs cases run with IFD disabled; only the flake-compat cases
-enable it. `--updates` exercises changes to the parent pin across all 14 cases,
+enable it. `--updates` exercises changes to the parent pin across all 20 cases,
 requiring other pins and original upstream locks to stay unchanged.
 `--syntax-only` checks Nix and Bash syntax.
 

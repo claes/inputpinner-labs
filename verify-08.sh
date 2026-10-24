@@ -25,6 +25,7 @@ if [[ ${1:-} == --syntax-only && $# == 1 ]]; then
     bash -n "$relative/update.sh"
   done
   bash -n "$0"
+  ./verify-unflake.sh 08 --syntax-only
   printf '%s\n' 'Example 08 Nix and Bash syntax checks passed.'
   exit 0
 fi
@@ -241,3 +242,5 @@ allow-import-from-derivation = $ifd"
   printf '%s: changing only the parent pin changed both package derivations\n' "$relative"
 done
 printf '%s\n' 'Example 08 passed: 14 native/library implementations; IFD enabled only for staged flake-compat.'
+
+./verify-unflake.sh 08 "$@"

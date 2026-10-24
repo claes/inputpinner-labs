@@ -1,0 +1,4 @@
+nix (Nix) 2.34.8
+unflake source: https://codeberg.org/goldstein/unflake/archive/22d908471bf3201856cd10d22813d85c66a75907.tar.gz
+npins 0.4.2
+lon 0.8.0

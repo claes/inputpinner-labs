@@ -24,6 +24,7 @@ if [[ ${1:-} == --syntax-only && $# == 1 ]]; then
     bash -n "$relative/init.sh"
   done
   bash -n "$0"
+  ./verify-unflake.sh 06 --syntax-only
   printf '%s\n' 'Example 06 Nix and Bash syntax checks passed.'
   exit 0
 fi
@@ -172,3 +173,5 @@ for relative in "${examples[@]}"; do
   printf '%s: pins, upstream lock, output dependency, matching wrapper, arguments, and unchanged files verified\n' "$relative"
 done
 printf '%s\n' 'Example 06 passed: 14 native/library implementations, with IFD disabled.'
+
+./verify-unflake.sh 06 "$@"
