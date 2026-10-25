@@ -10,10 +10,12 @@ stable_revision=$(cat stable-revision)
 unstable_revision=$(cat unstable-revision)
 nix --version > versions.txt
 nixtamal --version >> versions.txt
+# Declare our selected commits explicitly instead of locking today's default nixpkgs.
 nixtamal set-up --no-nixpkgs --fetch-time=eval --hash-algorithm=SHA-256
 # Seed explicit commits; set-up's default nixpkgs selection is not used.
 cat > nix/tamal/manifest.kdl <<EOF
 version "1.1.0"
+// Evaluation-time fetching lets the shipped resolver supply sources without IFD.
 inputs {
     stable {
         archive fetch-time=eval {

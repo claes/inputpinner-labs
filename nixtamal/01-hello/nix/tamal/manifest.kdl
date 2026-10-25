@@ -1,4 +1,5 @@
 version "1.1.0"
+// Evaluation-time fetching lets the shipped resolver supply sources without IFD.
 inputs {
     nixpkgs {
         // Bootstrap nixpkgs with built-in fetching, before importing any packages.

@@ -8,10 +8,13 @@ if [[ -e nix/tamal/manifest.kdl ]]; then
 fi
 nix --version > versions.txt
 nixtamal --version >> versions.txt
-# Build-time fetchers provide source records for the native with-inputs loader.
+# The native loader needs records with outPath, not evaluation-time path strings.
+# Reading these build-time sources requires IFD during normal evaluation.
 nixtamal set-up --no-nixpkgs --fetch-time=build --hash-algorithm=SHA-256
 cat > nix/tamal/manifest.kdl <<EOF
 version "1.1.0"
+// Build-time fetchers expose outPath records required by the native with-inputs loader.
+// Importing their Nix files requires IFD.
 inputs {
     nixpkgs {
         archive fetch-time=build {

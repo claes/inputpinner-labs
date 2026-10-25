@@ -1,4 +1,6 @@
 version "1.1.0"
+// Build-time fetchers expose outPath records required by the native with-inputs loader.
+// Importing their Nix files requires IFD.
 inputs {
     nixpkgs {
         archive fetch-time=build {

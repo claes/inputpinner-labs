@@ -1,3 +1,4 @@
+# Expose the system explicitly so the same pins can be used on another platform.
 { system ? builtins.currentSystem }:
 let
   sources = import ./nix/tamal { inherit system; };
@@ -8,6 +9,7 @@ let
   # Its recipe now uses the parent's compiler, libraries, and build helpers.
   pkgs = import sources.nixpkgs {
     inherit system;
+    # Ignore personal Nixpkgs settings so the example is reproducible.
     config = {};
     overlays = [ upstreamOverlay ];
   };

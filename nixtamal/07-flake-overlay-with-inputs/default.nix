@@ -1,12 +1,15 @@
+# Expose the system explicitly so the same pins can be used on another platform.
 { system ? builtins.currentSystem }:
 let
-  # The native loader reads Nixtamal's pins and supplies project self.
+  # Bootstrap the evaluator from our own pin; its native loader keeps Nixtamal
+  # responsible for fetching and supplies project self from this directory.
+  # Reading their fetched Nix files requires Import From Derivation (IFD).
   with-inputs =
     (import (import ./nix/tamal {}).with-inputs).from.nixtamal ./.;
 
   # Input relationships are separate from the package definitions.
   follows = {
-    # Preserve upstream's nixpkgs independently of our parent.
+    # Override automatic name matching so upstream keeps its own nixpkgs pin.
     patchelf.inputs.nixpkgs.follows = "upstream-nixpkgs";
   };
 
@@ -14,8 +17,10 @@ let
   outputs = inputs:
     let
       upstream = inputs.patchelf;
+      # Apply the overlay to our parent so its recipe uses our compiler and helpers.
       pkgs = import inputs.nixpkgs {
         inherit system;
+        # Ignore personal Nixpkgs settings so the example is reproducible.
         config = {};
         overlays = [ upstream.overlays.default ];
       };

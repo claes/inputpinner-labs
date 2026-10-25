@@ -7,6 +7,7 @@ if [[ -e nix/tamal/manifest.kdl ]]; then
   printf '%s\n' 'Already initialized; use a disposable copy for experiments.' >&2
   exit 1
 fi
+# Generate with the supported backend in isolation; builds use Nixtamal's shipped pins.
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/unflake-init.XXXXXXXX")
 trap 'rm -rf -- "$scratch"' EXIT
 cp inputs.nix revision patchelf-revision "$scratch/"

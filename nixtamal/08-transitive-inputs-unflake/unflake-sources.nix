@@ -3,6 +3,7 @@
 # so a parent-only update also reaches every deduplicated nixpkgs input.
 let
   sources = import ./sources.nix;
+  # Generated IDs stay stable; this map connects them to readable native pin names.
   names = builtins.fromJSON (builtins.readFile ./source-map.json);
   lock = builtins.fromJSON (builtins.readFile ./nix/tamal/lock.json);
   revisions = builtins.mapAttrs (_: pin: pin.fv) lock.i;
