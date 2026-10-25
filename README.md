@@ -406,9 +406,9 @@ The `-with-inputs` variants use
 [denful/with-inputs](https://github.com/denful/with-inputs/tree/641d01ef95eae1aeaa257ffd48102ab9a308f2a2)
 and its complete sources → follows → outputs interface. Each example keeps
 source loading, `follows` and `outputs` together in one file, with named bindings
-that make each step visible. The final call is `with-inputs [ follows inputsOverrides ] outputs`.
-The loader binds sources first, and caller overrides follow the example's own
-declarations. `system` remains optional. The public result includes `.inputs`,
+that make each step visible. Nixtamal finishes with `with-inputs follows outputs`.
+The other pinners retain `with-inputs [ follows inputsOverrides ] outputs` for
+caller overrides. The loader binds sources first. `system` remains optional. The public result includes `.inputs`,
 `.outputs` and project `self`, alongside the named packages.
 
 Niv, npins, Lon and Nixtamal use the built-in `.from.*` loaders. Nixtamal uses
@@ -431,16 +431,20 @@ fetches. They bind sources and project `self` through the generic API. All
 teaching logic stays in `default.nix`, or Mana's existing `entrypoint.nix`; no
 extra bootstrap, follows or outputs files are added.
 
-Each native pinner still owns six pins in 06/07 and five in 08. Explicit follows
-select `upstream-nixpkgs` throughout patchelf's graph in 06/07 and parent
-`nixpkgs` in 08. Aliases cover flake-parts and git-hooks-nix; empty follows
-disconnect optional development inputs. Automatic matching by name and the
+Nixtamal keeps the package-consumption examples small: four pins in 06/07 and
+three in 08, with one follows declaration each. Patchelf's packages and overlay
+do not evaluate its development tooling, so these examples omit flake-parts,
+git-hooks-nix and their input wiring. In 06/07 the consumed upstream nixpkgs is
+`upstream-nixpkgs`; in 08 it follows the parent `nixpkgs`.
+
+The other pinners retain six pins in 06/07 and five in 08, including development
+inputs and their aliases/disconnections. Automatic input matching and the
 library's `from.flake` fetcher are documented alternatives.
 
 Build all six pinners' 06 variants with `nix-build -A patchelf-demo`, and 07 with
 `nix-build -A patchelf-new`. Example 08 keeps `-A hello` and `-A patchelf`.
 `verify-with-inputs.sh` inspects public inputs and named outputs directly,
-including `inputs.self`, caller overrides, native pin preservation and parent-only
+including `inputs.self`, native pin preservation, caller overrides where supported, and parent-only
 updates in 08. It checks matching derivations and builds, compiler dependencies,
 and immutable files in fresh copies with spaces in their paths. Only the three
 Nixtamal/with-inputs cases enable IFD; the other with-inputs cases disable it.
@@ -555,7 +559,9 @@ The READMEs describe maintenance requirements. Mana maintenance needs a path
 without spaces; its saved locks build correctly in spaced paths.
 
 `./verify-08.sh` checks all 26 implementations, including both packages’ actual
-build dependencies and four effective upstream nixpkgs references. It compares
+build dependencies and effective upstream nixpkgs references. Nixtamal/with-inputs
+checks the consumed patchelf nixpkgs edge; the other variants also inspect
+their configured development-input edges. It compares
 source hashes when native fetch names differ, checks direct path reuse for
 flake-inputs, unflake and with-inputs, and checks that staged trees differ only in the intended
 lock node. Unflake also checks the gitignore nixpkgs edge and all source mappings.

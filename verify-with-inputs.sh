@@ -73,11 +73,14 @@ graph() {
     in {
       parent = toString inputs.nixpkgs;
       upstreamSource = toString inputs.patchelf;
-      paths = map toString [ upstream.inputs.nixpkgs
-        upstream.inputs.flake-parts.inputs.nixpkgs-lib
-        upstream.inputs.git-hooks-nix.inputs.nixpkgs
-        upstream.inputs.git-hooks-nix.inputs.nixpkgs-stable ];
-      disconnected = upstream.inputs.git-hooks-nix.inputs.flake-compat == {}
+      # Nixtamal consumes the package/overlay only; do not force development inputs.
+      paths = map toString ([ upstream.inputs.nixpkgs ] ++
+        (if \"$approach\" == \"nixtamal\" then [] else [
+          upstream.inputs.flake-parts.inputs.nixpkgs-lib
+          upstream.inputs.git-hooks-nix.inputs.nixpkgs
+          upstream.inputs.git-hooks-nix.inputs.nixpkgs-stable ]));
+      disconnected = if \"$approach\" == \"nixtamal\" then null else
+        upstream.inputs.git-hooks-nix.inputs.flake-compat == {}
         && upstream.inputs.git-hooks-nix.inputs.gitignore == {};
       adapterSource = toString inputs.with-inputs;
       outputNames = builtins.attrNames project.outputs;
@@ -133,7 +136,10 @@ check() {
   hash "$(jq -r .upstreamSource <<< "$info")" "$patchelf_hash"
   hash "$(jq -r .adapterSource <<< "$info")" 'sha256-y98sqtCGDKnD90PMK5qV3ux94sg/Fc/8Ka9+T8YeieE='
   while IFS= read -r path; do hash "$path" "$expected_upstream_hash"; done < <(jq -r '.paths[]' <<< "$info")
-  jq -e '.disconnected and .selfWorks' <<< "$info" > /dev/null
+  jq -e .selfWorks <<< "$info" > /dev/null
+  if [[ $approach != nixtamal ]]; then
+    jq -e .disconnected <<< "$info" > /dev/null
+  fi
   case $number in
     06) expected_names='["patchelf-demo"]' ;;
     07) expected_names='["patchelf-new"]' ;;
@@ -189,6 +195,7 @@ for approach in "${approaches[@]}"; do
   [[ $(revision "$approach" "$example" patchelf) == "$(cat "$example/patchelf-revision")" ]]
   expected_count=6
   if [[ $number == 08 ]]; then expected_count=5; fi
+  if [[ $approach == nixtamal ]]; then expected_count=$((expected_count - 2)); fi
   [[ $(records "$approach" "$example" | jq length) == "$expected_count" ]]
   for seed in "$example"/*-revision; do
     name=${seed##*/}; name=${name%-revision}
@@ -198,7 +205,7 @@ for approach in "${approaches[@]}"; do
   expected_drv=$initial_drv
   if [[ $number == 08 ]]; then upstream_hash=$parent_hash; else upstream_hash=$old_hash; fi
   check "$example" "$parent_hash" "$upstream_hash"
-  if [[ $number == 08 ]]; then
+  if [[ $number == 08 && $approach != nixtamal ]]; then
     # Exercise the public override argument without modifying native records.
     before_override=$(fingerprint "$example")
     override_info=$(graph "$example" true)

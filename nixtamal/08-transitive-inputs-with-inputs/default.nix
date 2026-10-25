@@ -1,4 +1,4 @@
-{ system ? builtins.currentSystem, inputsOverrides ? {} }:
+{ system ? builtins.currentSystem }:
 let
   # The native loader reads Nixtamal's pins and supplies project self.
   with-inputs =
@@ -6,14 +6,8 @@ let
 
   # Input relationships are separate from the package definitions.
   follows = {
-    # Make upstream patchelf use the same nixpkgs as our own hello package.
+    # Use our parent nixpkgs for upstream patchelf too.
     patchelf.inputs.nixpkgs.follows = "nixpkgs";
-    # Other inputs named nixpkgs follow it automatically.
-    nixpkgs-lib.follows = "nixpkgs";
-    nixpkgs-stable.follows = "nixpkgs";
-    # Upstream disconnects these optional development inputs too.
-    flake-compat.follows = "";
-    gitignore.follows = "";
   };
 
   # Define our outputs using resolved flake inputs, like a flake outputs function.
@@ -32,5 +26,4 @@ let
       patchelf = upstream.packages.${system}.default;
     };
 in
-# Caller overrides are applied after this example's follows declarations.
-with-inputs [ follows inputsOverrides ] outputs
+with-inputs follows outputs

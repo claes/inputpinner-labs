@@ -1,50 +1,32 @@
-# 07: Apply a flake overlay with nixtamal and with-inputs
+# 07: Apply a flake overlay with Nixtamal and with-inputs
 
-Apply upstream's overlay to the parent package set. Build its added
-`patchelf-new` attribute while preserving the original `pkgs.patchelf`.
+Apply upstream's overlay to the parent package set and build its added
+`patchelf-new` attribute. The original `pkgs.patchelf` remains available. The
+single follows preserves upstream's nixpkgs for evaluating its flake; applying
+the overlay uses the parent's compiler and build helpers.
 
 ```sh
 nix-build --option allow-import-from-derivation true -A patchelf-new
 ./result/bin/patchelf --version
 ```
 
-Read `default.nix` from top to bottom: `with-inputs` loads the native pins,
-`follows` declares their relationships, and `outputs` defines our packages from
-resolved inputs. The final call supplies `[ follows inputsOverrides ]` and
-`outputs`, completing the library's sources → follows → outputs interface.
-Caller overrides take precedence; `system` selects the target system. The result
-exposes named packages, `.inputs`, `.outputs` and `inputs.self`.
+Read `default.nix` from top to bottom: `.from.nixtamal` loads the native pins,
+`follows` supplies the one input relationship, and `outputs` defines our packages.
+The final call is `with-inputs follows outputs`; `system` selects the target.
+All teaching code is in this file.
 
-The `.from.nixtamal` loader supplies source handling and project `self` metadata:
+Nixtamal owns four pins: nixpkgs, patchelf, with-inputs, and the separate
+upstream-nixpkgs.
+Patchelf keeps its package and overlay outputs independent of development
+tooling, so flake-parts and git-hooks are not pinned or configured here.
 
-```nix
-with-inputs =
-  (import (import ./nix/tamal {}).with-inputs).from.nixtamal ./.;
-```
+The native loader uses build-time archive records (`fetch-time=build`). Reading
+flake files from their outputs requires **IFD (Import From Derivation)**, enabled
+explicitly in the commands above. The shipped pins and resolver suffice for
+builds without the Nixtamal CLI. `init.sh` recreates them from revision seeds;
+remove `nix/tamal/` only in a disposable copy before reinitializing.
 
-The manifest uses `fetch-time=build`: native archive fetchers return source
-records accepted by this loader. Reading `flake.nix` from their build outputs
-requires **IFD (Import From Derivation)**. Evaluation may therefore build the
-source fetchers before defining our packages; the commands above explicitly
-allow this. No source conversion or manual `self` setup is needed.
-
-Explicit follows keep patchelf and its transitive nixpkgs inputs on the separate
-`upstream-nixpkgs` pin. Our output function uses parent `inputs.nixpkgs`.
-The `nixpkgs-lib` and `nixpkgs-stable` aliases use the intended nixpkgs too.
-Empty follows disconnect upstream's optional gitignore and flake-compat inputs.
-This graph supports package and overlay consumption; it does not reproduce
-upstream development checks.
-
-The shipped pins, resolver and version record suffice for builds without a
-maintenance CLI. `init.sh` recreates the pins from revision seeds in a fresh
-copy and refuses to overwrite existing records. Before reinitializing a
-**disposable** copy, remove `nix/tamal/`.
-
-Alternatives: `fetch-time=eval` would avoid IFD, but its bare paths need a
-conversion before the generic with-inputs API can use them. The native loader
-is chosen here for clarity. Upstream separates the bindings into files; this lab keeps them
-together so the whole example is visible. Automatic name matching could replace
-the explicit patchelf follows in 08, but would hide the teaching point. The
-library's `from.flake` helper could fetch lock-file sources; native pins keep
-fetching under the pinner being compared. Sibling flake-compat, flake-inputs and
-unflake variants show other evaluators.
+Alternatives: evaluation-time fetchers avoid IFD but require wrapping their paths
+for the generic with-inputs API. Automatic input matching could share the parent
+without an explicit follows in 08; spelling it out illustrates the concept.
+Sibling flake-compat, flake-inputs and unflake examples show other evaluators.

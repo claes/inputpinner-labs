@@ -40,24 +40,6 @@ inputs {
             \$ echo "$(cat with-inputs-revision)"
         }
     }
-    flake-parts {
-        archive fetch-time=build {
-            url "https://github.com/hercules-ci/flake-parts/archive/{{fresh_value}}.tar.gz"
-        }
-        hash algorithm=SHA-256
-        fresh-cmd {
-            \$ echo "$(cat flake-parts-revision)"
-        }
-    }
-    git-hooks-nix {
-        archive fetch-time=build {
-            url "https://github.com/cachix/git-hooks.nix/archive/{{fresh_value}}.tar.gz"
-        }
-        hash algorithm=SHA-256
-        fresh-cmd {
-            \$ echo "$(cat git-hooks-nix-revision)"
-        }
-    }
     upstream-nixpkgs {
         archive fetch-time=build {
             url "https://github.com/NixOS/nixpkgs/archive/{{fresh_value}}.tar.gz"
